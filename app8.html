@@ -1491,21 +1491,33 @@
   codeInput.addEventListener('input', updateCodeCounter);
   codeInput.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyzeCode(); });
  
-  function detectBugs(code, lang){
-    const patterns = BUG_PATTERNS[lang] || [];
-    const bugs = [];
-    for (const p of patterns){
-      const re = new RegExp(p.re.source, p.re.flags);
-      let m;
-      while ((m = re.exec(code)) !== null){
-        const lineNumber = code.slice(0, m.index).split('\n').length;
-        bugs.push({ severity: p.severity, title: p.title, description: p.desc, fix: p.fix, concept: p.concept, match: m[0].trim(), line: lineNumber });
-        if (m[0].length === 0) re.lastIndex++;
-      }
+  function stripPythonNoise(code){
+  return code.replace(
+    /("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|#[^\n]*)/g,
+    s => s.replace(/[^\n]/g, ' ')
+  );
+}
+
+function detectBugs(code, lang){
+  const patterns = BUG_PATTERNS[lang] || [];
+  const scanText = lang === 'python' ? stripPythonNoise(code) : code;
+  const bugs = [];
+  for (const p of patterns){
+    const re = new RegExp(p.re.source, p.re.flags);
+    let m;
+    while ((m = re.exec(scanText)) !== null){
+      const lineNumber = scanText.slice(0, m.index).split('\n').length;
+      bugs.push({
+        severity: p.severity, title: p.title, description: p.desc, fix: p.fix,
+        concept: p.concept,
+        match: code.slice(m.index, m.index + m[0].length).trim(),
+        line: lineNumber
+      });
+      if (m[0].length === 0) re.lastIndex++;
     }
-    bugs.sort((a,b) => a.line - b.line);
-    return bugs;
   }
+  bugs.sort((a,b) => a.line - b.line);
+  return bugs;
  
   // ---- Dedicated HTML checks (structure, accessibility, security, performance) ----
   function detectHtmlBugs(code){
