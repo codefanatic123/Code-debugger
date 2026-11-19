@@ -1453,6 +1453,7 @@
     'Best Practices': ['Learn separation of concerns (HTML/CSS/JS)', 'Study unobtrusive JavaScript', 'Practice moving inline logic into script files'],
     'Semantic HTML': ['Learn modern semantic elements (header, nav, main, footer)', 'Study why older presentational tags were phased out', 'Practice rewriting old markup using CSS equivalents'],
     'Performance': ['Learn how browsers parse HTML and scripts', 'Study the difference between async and defer', 'Practice auditing render-blocking resources'],
+    'Syntax': ['Learn how your language pairs brackets, quotes and block endings', 'Use an editor with bracket matching and syntax highlighting', 'Read compiler/interpreter error messages from the first error down'],
   };
  
   const BUG_EXAMPLES = {
@@ -1522,6 +1523,21 @@ function detectBugs(code, lang){
 
   // ---- Dedicated HTML checks (structure, accessibility, security, performance) ----
   function detectHtmlBugs(code){
+  function detectAllIssues(code, lang){
+  let syntax = [], style = [];
+  try { syntax = detectSyntaxErrors(code, lang); } catch (e) { console.warn('Syntax check failed:', e); }
+  try { style  = lang === 'html' ? detectHtmlBugs(code) : detectBugs(code, lang); } catch (e) { console.warn('Pattern check failed:', e); }
+
+  const sevRank = { high: 0, medium: 1, low: 2 };
+  const seen = new Set();
+  return [...syntax, ...style]
+    .filter(b => {
+      const key = b.title + '|' + b.line + '|' + b.match;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => a.line - b.line || sevRank[a.severity] - sevRank[b.severity]);
     const bugs = [];
     const lineOf = idx => code.slice(0, idx).split('\n').length;
  
@@ -1687,7 +1703,7 @@ function detectBugs(code, lang){
     const stopRotation = rotateLoadingText(document.getElementById('bugLoadingText'), LOADING_PHRASES_CODE, 350);
     setTimeout(() => {
       stopRotation();
-      const bugs = currentLang === 'html' ? detectHtmlBugs(code) : detectBugs(code, currentLang);
+      const bugs = detectAllIssues(code, currentLang);
       renderBugResults(bugs);
       analyzeBtn.disabled = false;
       bumpStat('bugs');
