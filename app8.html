@@ -52,11 +52,11 @@
     --text-muted: #9aa1ac;
     --text-faint: #6b7280;
     --primary-bg: #232152;
-    --red-bg: #800000;
+    --red-bg: #3a1512;
     --amber-bg: #3a2c12;
     --green-bg: #10281c;
-    --teal-bg: #728C00;
-    --purple-bg: #645394;
+    --teal-bg: #0b2f38;
+    --purple-bg: #2a2150;
   }
  
   *{ box-sizing: border-box; }
@@ -701,11 +701,11 @@
     padding: 8px 10px;
     border-radius: 8px;
     background: rgba(59, 130, 246, 0.08);
-    color: var(--text-secondary, #64748b);
+    color: var(--text-muted);
     font-size: 0.9rem;
     line-height: 1.5;
   }
-  .issue-suggestion strong{ color: var(--text-primary, #1e293b); }
+  .issue-suggestion strong{ color: var(--text); }
   .issue-fix-action{ margin-top:.65rem; display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
   .issue-fix-action .fix-label{ font-size:.76rem; color:var(--text-faint); margin-right:auto; }
  
@@ -818,7 +818,7 @@
       linear-gradient(90deg,rgba(34,211,238,.035) 1px,transparent 1px);
     background-size:36px 36px;pointer-events:none;
   }
-  .hero > *{position:relative;z-index:3;}
+  .hero > :not(.hero-blob):not(.hero-mascot){position:relative;z-index:3;}
   .hero-eyebrow{color:var(--cc-cyan);letter-spacing:.14em;}
   .hero h1{font-weight:800;letter-spacing:-.035em;}
   .hero h1 .logic-word{
@@ -941,7 +941,7 @@
           <div class="hero-actions">
             <button class="hero-btn" data-nav="bugs">&lt;/&gt;&nbsp; Debug chamber</button>
             <button class="hero-btn ghost" data-nav="math">Σ&nbsp; Logic solver</button>
-            <button class="hero-btn ghost" data-nav="grammar">Aa&nbsp; Grammer guard</button>
+            <button class="hero-btn ghost" data-nav="grammar">Aa&nbsp; Grammar guard</button>
           </div>
           <img src="https://raw.githubusercontent.com/hashimrasheed275/Code-debugger/main/code-crusader-mascot.png" alt="Code Crusader — your logic-solving companion" class="hero-mascot">
         </div>
@@ -1518,7 +1518,8 @@ function detectBugs(code, lang){
   }
   bugs.sort((a,b) => a.line - b.line);
   return bugs;
- 
+}
+
   // ---- Dedicated HTML checks (structure, accessibility, security, performance) ----
   function detectHtmlBugs(code){
     const bugs = [];
@@ -1802,7 +1803,7 @@ function detectBugs(code, lang){
     const b = (left[1]||0) - (right[1]||0);
     const c = (left[0]||0) - (right[0]||0);
     const steps = [];
-    steps.push({ label: 'Standard form', value: `${fmtCoeff(a,'x^2')}${fmtCoeff(b,'x',true)}${fmtConst(c,true)} = 0` });
+    steps.push({ label: 'Standard form', value: `${fmtCoeff(a,'x^2')}${fmtCoeff(b,'x',true)}${fmtConst(c,true)} = 0`.trim().replace(/^\+\s*/, '') });
     if (Math.abs(a) < 1e-12){
       if (Math.abs(b) < 1e-12){
         if (Math.abs(c) < 1e-12) return { steps, answer: 'Infinitely many solutions', detail: 'Every value of x satisfies this equation.' };
@@ -2013,7 +2014,7 @@ function detectBugs(code, lang){
  
     // Did + incorrect verb
     {
-      pattern: /\b(didn't|did not|did)\s+\b\w+(ed|went|gone|ate|saw|came|took|made|gave)\b/gi,
+      pattern: /\b(didn't|did not|did)\s+(?!(?:need|feed|speed|seed|bleed|breed)\b)\w+(ed|went|gone|ate|saw|came|took|made|gave)\b/gi,
       severity: 'high',
       title: 'Incorrect verb after "did"',
       description: 'After "did" or "did not", the verb normally uses its base form.',
@@ -2022,7 +2023,7 @@ function detectBugs(code, lang){
  
     // Modal + incorrect verb
     {
-      pattern: /\b(can|could|will|would|should|must|may|might)\s+\w+(ed|ing)\b/gi,
+      pattern: /\b(can|could|will|would|should|must|may|might)\s+(?!(?:need|feed|speed|seed|bleed|breed|bring|sing|ring|swing|string|spring|sting|wing|cling|fling)\b)\w+(ed|ing)\b/gi,
       severity: 'medium',
       title: 'Possible modal verb error',
       description: 'Modal verbs are normally followed by the base form of the verb.',
@@ -2102,15 +2103,6 @@ function detectBugs(code, lang){
       title: 'Possible tense error',
       description: 'A past-time expression may require a past-tense verb.',
       suggestion: 'Check whether the verb should be in the past tense.'
-    },
- 
-    // Repeated subject
-    {
-      pattern: /\b(he|she|they|we|i)\s+\1\b/gi,
-      severity: 'medium',
-      title: 'Repeated word',
-      description: 'The same subject appears twice consecutively.',
-      suggestion: 'Remove the unnecessary repeated word.'
     }
   ];
  
@@ -2153,13 +2145,13 @@ function detectBugs(code, lang){
       return { label:'Fix to "their"', replacement:s.replace(/\bthey're\b/i,m => m[0] === 'T' ? 'Their' : 'their'), mode:'replace' };
 
     if (title === 'Possible "your"/"you\'re" error')
-      return { label:'Fix to "you\'re"', replacement:s.replace(/\byour\b/i,m => m[0] === 'Y' ? "You're" : "you're"), mode:'replace' };
+      return { label:'Fix to "you\'re"', replacement:s.replace(/\byour\s+(is|are|was|were)\b/i,(m,v)=>{const o=/^(was|were)$/i.test(v)?'you were':"you're";return m[0]==='Y'?o[0].toUpperCase()+o.slice(1):o;}), mode:'replace' };
 
     if (title === 'Possible "you\'re"/"your" error')
       return { label:'Fix to "your"', replacement:s.replace(/\byou're\b/i,m => m[0] === 'Y' ? 'Your' : 'your'), mode:'replace' };
 
     if (title === 'Possible "its"/"it\'s" error')
-      return { label:'Fix to "it\'s"', replacement:s.replace(/\bits\b/i,m => m[0] === 'I' ? "It's" : "it's"), mode:'replace' };
+      return { label:'Fix "its" → "it"', replacement:s.replace(/\bits\b/i,m => m[0] === 'I' ? 'It' : 'it'), mode:'replace' };
 
     if (title === 'Possible "it\'s"/"its" error')
       return { label:'Fix to "its"', replacement:s.replace(/\bit's\b/i,m => m[0] === 'I' ? 'Its' : 'its'), mode:'replace' };
@@ -2301,7 +2293,7 @@ function detectBugs(code, lang){
     'realy':'really', 'recomend':'recommend', 'refered':'referred', 'relevent':'relevant', 'repitition':'repetition',
     'restarant':'restaurant', 'rember':'remember', 'seperation':'separation', 'sieze':'seize', 'speach':'speech',
     'strenght':'strength', 'stuggle':'struggle', 'succsessful':'successful', 'suprise':'surprise', 'threre':'there',
-    'truely':'truly', 'unfortunatly':'unfortunately', 'unforeseeable':'unforeseeable', 'usualy':'usually', 'vegtable':'vegetable',
+    'truely':'truly', 'unfortunatly':'unfortunately',  'usualy':'usually', 'vegtable':'vegetable',
     'visable':'visible', 'volentered':'volunteered', 'wether':'whether', 'whenver':'whenever', 'withdrawl':'withdrawal',
     'writen':'written',
   };
@@ -2444,7 +2436,7 @@ function detectBugs(code, lang){
     let html = ''; let pos = 0;
     for (const h of merged){
       html += escapeHtml(text.slice(pos, h.start));
-      html += `<span class="flag ${h.severity === 'medium' ? 'high' : ''}">${escapeHtml(text.slice(h.start, h.end))}</span>`;
+      html += `<span class="flag ${h.severity === 'high' ? 'high' : ''}">${escapeHtml(text.slice(h.start, h.end))}</span>`;
       pos = h.end;
     }
     html += escapeHtml(text.slice(pos));
