@@ -1113,7 +1113,7 @@
   // UTILITIES
   // =================================================================
   function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"':'&#39;'}[c]));
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   const toastWrap = document.getElementById('toastWrap');
@@ -1360,7 +1360,6 @@
     const bugs = [];
     const lineOf = idx => code.slice(0, idx).split('\n').length;
 
-    // Strip strings/comments so bracket matching isn't fooled by them.
     function stripForBalance(src, lang){
       let out = src;
       if (lang === 'python'){
@@ -1511,7 +1510,6 @@
     opts = opts || {};
     currentLang = lang;
     [...langRow.children].forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
-    // Only overwrite the editor if it's empty or caller explicitly requests it.
     const isEmpty = !codeInput.value.trim();
     const isExample = Object.values(BUG_EXAMPLES).includes(codeInput.value);
     if (opts.fill || isEmpty || isExample){
@@ -1894,7 +1892,6 @@
   }
 
   function looksLikeEquation(str){
-    // Only a single, non-comparison '=' triggers equation mode.
     const cleaned = str.replace(/==|!=|<=|>=/g, '');
     return cleaned.includes('=');
   }
@@ -2148,7 +2145,6 @@
       stopRotation();
       const issues = [];
 
-      // Confusable word patterns
       for (const rule of CONFUSABLE_WORDS){
         const re = new RegExp(rule.pattern.source, rule.pattern.flags);
         let m;
@@ -2167,7 +2163,6 @@
         }
       }
 
-      // Style checks (whole-text)
       for (const rule of GRAMMAR_STYLE_CHECKS){
         try {
           if (rule.test(text)){
@@ -2185,7 +2180,6 @@
         } catch(e){ /* skip failing rule */ }
       }
 
-      // Sort by index so highlighted positions match issue order
       issues.sort((a,b) => a.index - b.index);
 
       grammarCountLabel.textContent = issues.length === 0
@@ -2218,7 +2212,6 @@
         html += `</div>`;
         grammarResultsPanel.innerHTML = html;
 
-        // Highlight matches in the preview
         const ranges = issues
           .filter(i => i.length > 0)
           .map(i => ({ start: i.index, end: i.index + i.length, severity: i.severity }))
@@ -2226,7 +2219,7 @@
         let preview = '';
         let cursor = 0;
         for (const r of ranges){
-          if (r.start < cursor) continue; // skip overlaps
+          if (r.start < cursor) continue;
           preview += escapeHtml(text.slice(cursor, r.start));
           const cls = r.severity === 'high' ? 'flag high' : 'flag';
           preview += `<span class="${cls}">${escapeHtml(text.slice(r.start, r.end))}</span>`;
@@ -2236,7 +2229,6 @@
         highlightedText.innerHTML = preview || escapeHtml(text);
         grammarPreviewPanel.style.display = '';
 
-        // Learning path
         const concepts = [...new Set(issues.map(i => i.concept))];
         const steps = [];
         for (const c of concepts){
