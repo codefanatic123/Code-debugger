@@ -792,6 +792,14 @@
   .path-group{ font-family:var(--font-display); font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--primary); padding:1rem 0 .2rem; }
   .path-group:first-child{ padding-top:0; }
 
+  .grammar-score{ display:flex; align-items:center; gap:1.1rem; padding:1rem 1.1rem; margin-bottom:1.1rem; border:1px solid var(--border); border-radius:10px; background:var(--bg); }
+  .grammar-score-ring{ --pct:0; --clr:var(--green); width:72px; height:72px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:conic-gradient(var(--clr) calc(var(--pct) * 1%), var(--border) 0); position:relative; }
+  .grammar-score-ring::before{ content:""; position:absolute; inset:7px; border-radius:50%; background:var(--surface); }
+  .grammar-score-ring span{ position:relative; font-family:var(--font-display); font-weight:800; font-size:1.25rem; }
+  .grammar-score-meta{ display:flex; flex-direction:column; gap:.2rem; font-size:.82rem; color:var(--text-muted); }
+  .grammar-score-meta b{ font-size:1rem; color:var(--text); }
+
   footer.site-footer{ text-align: center; padding: 2rem 1rem 3rem; font-size: 0.8rem; color: var(--text-faint); }
 
   .toast-wrap{ position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; z-index: 100; }
@@ -1774,54 +1782,86 @@
   function evaluateExpression(exprStr){
     let i = 0;
     const s = exprStr.replace(/\s+/g, '');
+    const steps = [];
     function peek(){ return s[i]; }
     function error(msg){ throw new Error(msg); }
+
+    // Record each binary operation as a step
+    function record(label, left, op, right, result){
+      steps.push({
+        label: label,
+        value: `${fmtNum(left)} ${op} ${fmtNum(right)} = ${fmtNum(result)}`
+      });
+    }
+
     function parseExpr(){
       let val = parseTerm();
       while (peek() === '+' || peek() === '-'){
-        const op = s[i++]; const rhs = parseTerm();
-        val = op === '+' ? val + rhs : val - rhs;
+        const op = s[i++];
+        const left = val;
+        const rhs = parseTerm();
+        val = op === '+' ? left + rhs : left - rhs;
+        record('Add / subtract', left, op, rhs, val);
       }
       return val;
     }
     function parseTerm(){
       let val = parseFactor();
       while (peek() === '*' || peek() === '/'){
-        const op = s[i++]; const rhs = parseFactor();
-        if (op === '/'){ if (rhs === 0) error('Division by zero'); val = val / rhs; } else val = val * rhs;
+        const op = s[i++];
+        const left = val;
+        const rhs = parseFactor();
+        if (op === '/'){ if (rhs === 0) error('Division by zero'); val = left / rhs; }
+        else { val = left * rhs; }
+        record(op === '*' ? 'Multiply' : 'Divide', left, op, rhs, val);
       }
       return val;
     }
     function parseFactor(){
-      if (peek() === '-'){ i++; return -parseFactor(); }
+      if (peek() === '-'){ i++; const v = -parseFactor(); return v; }
       if (peek() === '+'){ i++; return parseFactor(); }
       let val = parseBase();
-      if (peek() === '^'){ i++; const exp = parseFactor(); val = Math.pow(val, exp); }
+      if (peek() === '^'){
+        i++;
+        const base = val;
+        const exp = parseFactor();
+        val = Math.pow(base, exp);
+        steps.push({ label: 'Exponent', value: `${fmtNum(base)} ^ ${fmtNum(exp)} = ${fmtNum(val)}` });
+      }
       return val;
     }
     function parseBase(){
       if (peek() === '('){
-        i++; const val = parseExpr();
+        i++;
+        const startIdx = i;
+        const val = parseExpr();
         if (peek() !== ')') error('Missing closing parenthesis');
-        i++; return val;
+        i++;
+        const inner = s.slice(startIdx, i - 1);
+        steps.push({ label: 'Parentheses', value: `(${inner}) = ${fmtNum(val)}` });
+        return val;
       }
       const funcMatch = /^(sqrt|abs|sin|cos|tan|log)/.exec(s.slice(i));
       if (funcMatch){
         const fname = funcMatch[1]; i += fname.length;
         if (peek() !== '(') error('Expected ( after ' + fname);
-        i++; const arg = parseExpr();
+        i++;
+        const arg = parseExpr();
         if (peek() !== ')') error('Missing closing parenthesis');
         i++;
         const fns = { sqrt: Math.sqrt, abs: Math.abs, sin: Math.sin, cos: Math.cos, tan: Math.tan, log: Math.log10 };
-        return fns[fname](arg);
+        const val = fns[fname](arg);
+        steps.push({ label: `Function ${fname}`, value: `${fname}(${fmtNum(arg)}) = ${fmtNum(val)}` });
+        return val;
       }
       const numMatch = /^\d+(\.\d+)?/.exec(s.slice(i));
       if (numMatch){ i += numMatch[0].length; return parseFloat(numMatch[0]); }
       error('Unexpected character: ' + (peek() || 'end of input'));
     }
+
     const result = parseExpr();
     if (i < s.length) error('Unexpected trailing input: ' + s.slice(i));
-    return result;
+    return { value: result, steps };
   }
 
   function parsePolynomialSide(sideStr){
@@ -1860,25 +1900,56 @@
     const c = (left[0]||0) - (right[0]||0);
     const steps = [];
     steps.push({ label: 'Standard form', value: `${fmtCoeff(a,'x^2')}${fmtCoeff(b,'x',true)}${fmtConst(c,true)} = 0`.trim().replace(/^\+\s*/, '') });
+
+    // ---- Linear (or degenerate) ----
     if (Math.abs(a) < 1e-12){
       if (Math.abs(b) < 1e-12){
         if (Math.abs(c) < 1e-12) return { steps, answer: 'Infinitely many solutions', detail: 'Every value of x satisfies this equation.' };
         return { steps, answer: 'No solution', detail: 'This equation reduces to a false statement (e.g. 0 = 5).' };
       }
       const x = -c / b;
-      steps.push({ label: 'Isolate x', value: `x = ${fmtNum(-c)} / ${fmtNum(b)}` });
+      steps.push({ label: 'Move constant', value: `${fmtNum(b)}x = ${fmtNum(-c)}` });
+      steps.push({ label: 'Divide by ' + fmtNum(b), value: `x = ${fmtNum(-c)} / ${fmtNum(b)} = ${fmtNum(x)}` });
+      steps.push({ label: 'Check', value: `${fmtNum(b)}(${fmtNum(x)}) + (${fmtNum(c)}) = ${fmtNum(b * x + c)}` });
       return { steps, answer: `x = ${fmtNum(x)}`, detail: 'Linear equation — one solution.' };
     }
-    const disc = b*b - 4*a*c;
-    steps.push({ label: 'Discriminant', value: `b² − 4ac = ${fmtNum(b)}² − 4(${fmtNum(a)})(${fmtNum(c)}) = ${fmtNum(disc)}` });
+
+    // ---- Quadratic: full working ----
+    steps.push({ label: 'Identify', value: `a = ${fmtNum(a)},  b = ${fmtNum(b)},  c = ${fmtNum(c)}` });
+    let disc = b*b - 4*a*c;
+    if (Math.abs(disc) < 1e-12) disc = 0;
+    steps.push({ label: 'Discriminant', value: `b² − 4ac = (${fmtNum(b)})² − 4(${fmtNum(a)})(${fmtNum(c)}) = ${fmtNum(b*b)} − (${fmtNum(4*a*c)}) = ${fmtNum(disc)}` });
+    const twoA = 2 * a;
+    const evalAt = x => a*x*x + b*x + c;
+
     if (disc < 0){
-      const re = (-b/(2*a)); const im = Math.sqrt(-disc)/(2*a);
-      return { steps, answer: `x = ${fmtNum(re)} ± ${fmtNum(Math.abs(im))}i`, detail: 'Negative discriminant — two complex solutions.' };
+      const sq = Math.sqrt(-disc);
+      const re = -b / twoA, im = Math.abs(sq / twoA);
+      steps.push({ label: 'Nature of roots', value: 'Discriminant < 0, so there are no real roots — two complex roots.' });
+      steps.push({ label: 'Square root', value: `√(${fmtNum(disc)}) = ${fmtNum(sq)}i` });
+      steps.push({ label: 'Substitute', value: `x = (${fmtNum(-b)} ± ${fmtNum(sq)}i) / ${fmtNum(twoA)}` });
+      steps.push({ label: 'Simplify', value: `x = ${fmtNum(re)} ± ${fmtNum(im)}i` });
+      return { steps, answer: `x = ${fmtNum(re)} ± ${fmtNum(im)}i`, detail: 'Negative discriminant — two complex solutions.' };
     }
+
+    if (disc === 0){
+      const x = -b / twoA;
+      steps.push({ label: 'Nature of roots', value: 'Discriminant = 0, so there is one repeated real root.' });
+      steps.push({ label: 'Square root', value: '√0 = 0' });
+      steps.push({ label: 'Substitute', value: `x = −b / 2a = ${fmtNum(-b)} / ${fmtNum(twoA)} = ${fmtNum(x)}` });
+      steps.push({ label: 'Check', value: `a(${fmtNum(x)})² + b(${fmtNum(x)}) + c = ${fmtNum(evalAt(x))}` });
+      return { steps, answer: `x = ${fmtNum(x)}`, detail: 'One repeated real solution (discriminant = 0).' };
+    }
+
     const sq = Math.sqrt(disc);
-    const x1 = (-b + sq) / (2*a); const x2 = (-b - sq) / (2*a);
-    steps.push({ label: 'Quadratic formula', value: `x = (−b ± √disc) / (2a)` });
-    if (Math.abs(x1 - x2) < 1e-9) return { steps, answer: `x = ${fmtNum(x1)}`, detail: 'One repeated real solution (discriminant = 0).' };
+    const x1 = (-b + sq) / twoA, x2 = (-b - sq) / twoA;
+    steps.push({ label: 'Nature of roots', value: 'Discriminant > 0, so there are two distinct real roots.' });
+    steps.push({ label: 'Square root', value: `√${fmtNum(disc)} = ${fmtNum(sq)}` });
+    steps.push({ label: 'Substitute', value: `x = (−b ± √D) / 2a = (${fmtNum(-b)} ± ${fmtNum(sq)}) / ${fmtNum(twoA)}` });
+    steps.push({ label: 'Root 1 (+)', value: `x₁ = (${fmtNum(-b)} + ${fmtNum(sq)}) / ${fmtNum(twoA)} = ${fmtNum(-b + sq)} / ${fmtNum(twoA)} = ${fmtNum(x1)}` });
+    steps.push({ label: 'Root 2 (−)', value: `x₂ = (${fmtNum(-b)} − ${fmtNum(sq)}) / ${fmtNum(twoA)} = ${fmtNum(-b - sq)} / ${fmtNum(twoA)} = ${fmtNum(x2)}` });
+    steps.push({ label: 'Check x₁', value: `a(${fmtNum(x1)})² + b(${fmtNum(x1)}) + c = ${fmtNum(evalAt(x1))}` });
+    steps.push({ label: 'Check x₂', value: `a(${fmtNum(x2)})² + b(${fmtNum(x2)}) + c = ${fmtNum(evalAt(x2))}` });
     return { steps, answer: `x = ${fmtNum(x1)}  or  x = ${fmtNum(x2)}`, detail: 'Two real solutions.' };
   }
 
@@ -1907,14 +1978,24 @@
   function renderMathError(msg){
     mathResultsPanel.innerHTML = `<div class="issue high"><div class="issue-head"><div class="issue-title">Couldn't solve that</div><div class="badge-sev high">error</div></div><div class="issue-desc">${escapeHtml(msg)}</div></div>`;
   }
-  function renderMathArithmetic(exprStr, value){
+  function renderMathArithmetic(exprStr, result){
+    const stepsHtml = result.steps.length
+      ? `<div class="math-steps">` + result.steps.map(st =>
+          `<div class="math-step-row"><span class="math-step-label">${escapeHtml(st.label)}</span><span>${escapeHtml(st.value)}</span></div>`
+        ).join('') + `</div>`
+      : '';
     mathResultsPanel.innerHTML = `
       <div class="math-result">
         <div class="expr">${escapeHtml(exprStr)}</div>
-        <div class="answer">= ${escapeHtml(fmtNum(value))}</div>
+        <div class="answer">= ${escapeHtml(fmtNum(result.value))}</div>
+        ${stepsHtml}
         <div class="result-actions" style="justify-content:center;"><button class="btn icon-btn" id="copyMathBtn">📋 Copy answer</button></div>
       </div>`;
-    document.getElementById('copyMathBtn').addEventListener('click', () => copyToClipboard(`${exprStr} = ${fmtNum(value)}`, 'Answer'));
+    document.getElementById('copyMathBtn').addEventListener('click', () => {
+      let report = `${exprStr} = ${fmtNum(result.value)}\n\nSteps:\n`;
+      result.steps.forEach(st => { report += `• ${st.label}: ${st.value}\n`; });
+      copyToClipboard(report, 'Answer');
+    });
   }
   function renderMathEquation(eqStr, result){
     let stepsHtml = result.steps.map(s => `<div class="math-step-row"><span class="math-step-label">${escapeHtml(s.label)}</span><span>${escapeHtml(s.value)}</span></div>`).join('');
@@ -1937,8 +2018,8 @@
         const result = solveEquation(raw);
         renderMathEquation(raw, result);
       } else {
-        const value = evaluateExpression(raw);
-        renderMathArithmetic(raw, value);
+        const result = evaluateExpression(raw);   // now returns { value, steps }
+        renderMathArithmetic(raw, result);
       }
       bumpStat('math');
       pushHistory('math', raw);
@@ -2360,6 +2441,30 @@
   // ---------- UI ----------
   let lastGrammar = { text:'', issues:[] };
 
+  function computeWritingScore(issues, text){
+    const words = (text.match(/\b[\w']+\b/g) || []).length;
+    const weight = { high:3, medium:2, low:1 };
+    const weighted = issues.reduce((n, i) => n + weight[i.severity], 0);
+    const penalty = (weighted / Math.max(words, 20)) * 100 * 1.2;
+    const score = Math.max(0, Math.min(100, Math.round(100 - penalty)));
+    let label, color;
+    if (score >= 90){ label = 'Excellent'; color = 'var(--green)'; }
+    else if (score >= 75){ label = 'Good'; color = 'var(--primary)'; }
+    else if (score >= 55){ label = 'Needs polish'; color = 'var(--amber)'; }
+    else { label = 'Needs work'; color = 'var(--red)'; }
+    return { score, label, color, words };
+  }
+
+  function scoreHtml(sc, issueCount){
+    return `<div class="grammar-score">
+        <div class="grammar-score-ring" style="--pct:${sc.score}; --clr:${sc.color};"><span>${sc.score}</span></div>
+        <div class="grammar-score-meta">
+          <b>Writing score: ${sc.label}</b>
+          <span>${sc.words} word${sc.words === 1 ? '' : 's'} · ${issueCount} issue${issueCount === 1 ? '' : 's'} found</span>
+        </div>
+      </div>`;
+  }
+
   function visible(s){ return /^\s|\s$/.test(s) ? s.replace(/ /g, '·') : s; }
   function clip(s, n){ return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 
@@ -2375,7 +2480,7 @@
     grammarCountLabel.textContent = issues.length === 0 ? 'No issues' : `${issues.length} issue${issues.length === 1 ? '' : 's'}`;
 
     if (issues.length === 0){
-      grammarResultsPanel.innerHTML = `<div class="clean-state"><div class="badge">✓ ${pick(CLEAN_PHRASES_TEXT)}</div><p>Nothing matched our known grammar and style checks.</p></div>`;
+      grammarResultsPanel.innerHTML = scoreHtml(computeWritingScore(issues, text), 0) + `<div class="clean-state"><div class="badge">✓ ${pick(CLEAN_PHRASES_TEXT)}</div><p>Nothing matched our known grammar and style checks.</p></div>`;
       grammarPreviewPanel.style.display = 'none';
       grammarLearningPanel.style.display = 'none';
       fireConfetti(grammarResultsPanel);
@@ -2384,7 +2489,7 @@
 
     const count = s => issues.filter(i => i.severity === s).length;
     const fixable = issues.filter(i => i.replacement != null).length;
-    let html = `<div class="summary-row">
+    let html = scoreHtml(computeWritingScore(issues, text), issues.length) + `<div class="summary-row">
         <div class="summary-chip high"><span class="num">${count('high')}</span><span class="lbl">High</span></div>
         <div class="summary-chip medium"><span class="num">${count('medium')}</span><span class="lbl">Medium</span></div>
         <div class="summary-chip low"><span class="num">${count('low')}</span><span class="lbl">Low</span></div>
