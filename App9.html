@@ -791,7 +791,6 @@
   .issue-fix .fix-btn{ padding:.25rem .6rem; font-size:.74rem; }
   .path-group{ font-family:var(--font-display); font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--primary); padding:1rem 0 .2rem; }
   .path-group:first-child{ padding-top:0; }
-  .example-list.prose .example-btn{ font-family:var(--font-body); font-size:.85rem; }
 
   footer.site-footer{ text-align: center; padding: 2rem 1rem 3rem; font-size: 0.8rem; color: var(--text-faint); }
 
@@ -1077,10 +1076,6 @@
                 <button class="btn secondary" id="textClearBtn">Clear</button>
               </div>
               <div class="history-row" id="grammarHistoryRow"></div>
-              <div style="margin-top:1.4rem;">
-                <div class="section-label" style="margin-bottom:0.6rem;">Try an example</div>
-                <div class="example-list prose" id="grammarExamples"></div>
-              </div>
             </div>
           </section>
 
@@ -2258,16 +2253,6 @@
     }).sort((a, b) => a.index - b.index || rank[a.severity] - rank[b.severity]);
   }
 
-  // ---------- EXAMPLES ----------
-  const GRAMMAR_EXAMPLES = [
-    { label:'Mixed-up words', text:'Your going to loose the game if you dont practice. Their is no way you could of won, its to late now.' },
-    { label:'Spelling & spacing', text:'I recieve emails everyday , but i definately cant answer them all.Its a seperate problem , and teh inbox is never empty!!' },
-    { label:'Agreement, a/an & double negatives', text:"She don't like apples, and they was an hour late. We was hoping for a umbrella but he have a unique idea. I don't have no time." },
-    { label:'Apostrophes & capitals', text:'i cant believe its already friday. we shouldnt of waited so long, thats why we are late. Whos going to tell your boss?' },
-    { label:'Wordy, passive & run-on', text:'The report was written by the team in order to make a decision at this point in time, and it was reviewed by the manager who thought that the data was very unique and that the results which were shown in the charts were hard to explain to anyone who had not been involved in the project from the start.' },
-    { label:'Clean text (no issues)', text:'Writing clearly takes practice. Read each sentence aloud, trim extra words, and ask a friend to review your draft.' }
-  ];
-
   // ---------- LEARNING PATHS ----------
   const GRAMMAR_LEARNING_PATHS = {
     'Confusable Words': [
@@ -2514,20 +2499,6 @@
     const one = e.target.closest('.fix-btn');
     if (one){ applyOneFix(parseInt(one.dataset.i, 10)); return; }
     if (e.target.closest('#fixAllBtn')) applyAllFixes();
-  });
-
-  // Example buttons
-  const grammarExamples = document.getElementById('grammarExamples');
-  grammarExamples.innerHTML = GRAMMAR_EXAMPLES.map((ex, i) =>
-    `<button class="example-btn" data-ex="${i}">${escapeHtml(ex.label)}</button>`).join('');
-  grammarExamples.addEventListener('click', e => {
-    const btn = e.target.closest('.example-btn');
-    if (!btn) return;
-    const ex = GRAMMAR_EXAMPLES[parseInt(btn.dataset.ex, 10)];
-    if (!ex) return;
-    textInput.value = ex.text;
-    updateTextCounter();
-    checkGrammar();
   });
 
   checkBtn.addEventListener('click', () => checkGrammar());
