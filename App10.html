@@ -1900,25 +1900,56 @@
     const c = (left[0]||0) - (right[0]||0);
     const steps = [];
     steps.push({ label: 'Standard form', value: `${fmtCoeff(a,'x^2')}${fmtCoeff(b,'x',true)}${fmtConst(c,true)} = 0`.trim().replace(/^\+\s*/, '') });
+
+    // ---- Linear (or degenerate) ----
     if (Math.abs(a) < 1e-12){
       if (Math.abs(b) < 1e-12){
         if (Math.abs(c) < 1e-12) return { steps, answer: 'Infinitely many solutions', detail: 'Every value of x satisfies this equation.' };
         return { steps, answer: 'No solution', detail: 'This equation reduces to a false statement (e.g. 0 = 5).' };
       }
       const x = -c / b;
-      steps.push({ label: 'Isolate x', value: `x = ${fmtNum(-c)} / ${fmtNum(b)}` });
+      steps.push({ label: 'Move constant', value: `${fmtNum(b)}x = ${fmtNum(-c)}` });
+      steps.push({ label: 'Divide by ' + fmtNum(b), value: `x = ${fmtNum(-c)} / ${fmtNum(b)} = ${fmtNum(x)}` });
+      steps.push({ label: 'Check', value: `${fmtNum(b)}(${fmtNum(x)}) + (${fmtNum(c)}) = ${fmtNum(b * x + c)}` });
       return { steps, answer: `x = ${fmtNum(x)}`, detail: 'Linear equation — one solution.' };
     }
-    const disc = b*b - 4*a*c;
-    steps.push({ label: 'Discriminant', value: `b² − 4ac = ${fmtNum(b)}² − 4(${fmtNum(a)})(${fmtNum(c)}) = ${fmtNum(disc)}` });
+
+    // ---- Quadratic: full working ----
+    steps.push({ label: 'Identify', value: `a = ${fmtNum(a)},  b = ${fmtNum(b)},  c = ${fmtNum(c)}` });
+    let disc = b*b - 4*a*c;
+    if (Math.abs(disc) < 1e-12) disc = 0;
+    steps.push({ label: 'Discriminant', value: `b² − 4ac = (${fmtNum(b)})² − 4(${fmtNum(a)})(${fmtNum(c)}) = ${fmtNum(b*b)} − (${fmtNum(4*a*c)}) = ${fmtNum(disc)}` });
+    const twoA = 2 * a;
+    const evalAt = x => a*x*x + b*x + c;
+
     if (disc < 0){
-      const re = (-b/(2*a)); const im = Math.sqrt(-disc)/(2*a);
-      return { steps, answer: `x = ${fmtNum(re)} ± ${fmtNum(Math.abs(im))}i`, detail: 'Negative discriminant — two complex solutions.' };
+      const sq = Math.sqrt(-disc);
+      const re = -b / twoA, im = Math.abs(sq / twoA);
+      steps.push({ label: 'Nature of roots', value: 'Discriminant < 0, so there are no real roots — two complex roots.' });
+      steps.push({ label: 'Square root', value: `√(${fmtNum(disc)}) = ${fmtNum(sq)}i` });
+      steps.push({ label: 'Substitute', value: `x = (${fmtNum(-b)} ± ${fmtNum(sq)}i) / ${fmtNum(twoA)}` });
+      steps.push({ label: 'Simplify', value: `x = ${fmtNum(re)} ± ${fmtNum(im)}i` });
+      return { steps, answer: `x = ${fmtNum(re)} ± ${fmtNum(im)}i`, detail: 'Negative discriminant — two complex solutions.' };
     }
+
+    if (disc === 0){
+      const x = -b / twoA;
+      steps.push({ label: 'Nature of roots', value: 'Discriminant = 0, so there is one repeated real root.' });
+      steps.push({ label: 'Square root', value: '√0 = 0' });
+      steps.push({ label: 'Substitute', value: `x = −b / 2a = ${fmtNum(-b)} / ${fmtNum(twoA)} = ${fmtNum(x)}` });
+      steps.push({ label: 'Check', value: `a(${fmtNum(x)})² + b(${fmtNum(x)}) + c = ${fmtNum(evalAt(x))}` });
+      return { steps, answer: `x = ${fmtNum(x)}`, detail: 'One repeated real solution (discriminant = 0).' };
+    }
+
     const sq = Math.sqrt(disc);
-    const x1 = (-b + sq) / (2*a); const x2 = (-b - sq) / (2*a);
-    steps.push({ label: 'Quadratic formula', value: `x = (−b ± √disc) / (2a)` });
-    if (Math.abs(x1 - x2) < 1e-9) return { steps, answer: `x = ${fmtNum(x1)}`, detail: 'One repeated real solution (discriminant = 0).' };
+    const x1 = (-b + sq) / twoA, x2 = (-b - sq) / twoA;
+    steps.push({ label: 'Nature of roots', value: 'Discriminant > 0, so there are two distinct real roots.' });
+    steps.push({ label: 'Square root', value: `√${fmtNum(disc)} = ${fmtNum(sq)}` });
+    steps.push({ label: 'Substitute', value: `x = (−b ± √D) / 2a = (${fmtNum(-b)} ± ${fmtNum(sq)}) / ${fmtNum(twoA)}` });
+    steps.push({ label: 'Root 1 (+)', value: `x₁ = (${fmtNum(-b)} + ${fmtNum(sq)}) / ${fmtNum(twoA)} = ${fmtNum(-b + sq)} / ${fmtNum(twoA)} = ${fmtNum(x1)}` });
+    steps.push({ label: 'Root 2 (−)', value: `x₂ = (${fmtNum(-b)} − ${fmtNum(sq)}) / ${fmtNum(twoA)} = ${fmtNum(-b - sq)} / ${fmtNum(twoA)} = ${fmtNum(x2)}` });
+    steps.push({ label: 'Check x₁', value: `a(${fmtNum(x1)})² + b(${fmtNum(x1)}) + c = ${fmtNum(evalAt(x1))}` });
+    steps.push({ label: 'Check x₂', value: `a(${fmtNum(x2)})² + b(${fmtNum(x2)}) + c = ${fmtNum(evalAt(x2))}` });
     return { steps, answer: `x = ${fmtNum(x1)}  or  x = ${fmtNum(x2)}`, detail: 'Two real solutions.' };
   }
 
