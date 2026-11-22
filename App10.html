@@ -1,0 +1,2594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Crusader — Logic, Decoded.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/hashimrasheed275/Code-debugger/main/code-crusader-mascot.png">
+<style>
+  :root{
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --sidebar: #14161a;
+    --sidebar-hover: #1f2229;
+    --sidebar-text: #b8bcc4;
+    --sidebar-text-dim: #6b7078;
+    --border: #e4e7ec;
+    --text: #1a1d21;
+    --text-muted: #667085;
+    --text-faint: #98a2b3;
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --primary-bg: #eef2ff;
+    --primary-light: #7c72f5;
+    --red: #d92d20;
+    --red-bg: #fef3f2;
+    --amber: #b54708;
+    --amber-bg: #fffaeb;
+    --green: #067647;
+    --green-bg: #ecfdf3;
+    --teal: #0e7490;
+    --teal-bg: #ecfeff;
+    --purple: #6941c6;
+    --purple-bg: #f9f5ff;
+    --radius: 10px;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,0.05);
+    --shadow-md: 0 4px 12px rgba(16,24,40,0.08);
+    --shadow-lg: 0 12px 32px rgba(16,24,40,0.14);
+    --sidebar-w: 240px;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-display: 'Sora', 'Inter', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --cc-cyan:#22d3ee; --cc-blue:#168cff; --cc-purple:#8b5cf6;
+    --cc-deep:#07111f; --cc-panel:#0d1728; --cc-panel-2:#111d31;
+    --cc-border:rgba(56,189,248,.18); --cc-text:#f4f7fb; --cc-muted:#9aa9bd;
+  }
+
+  html[data-theme="dark"]{
+    --bg: #060b14;
+    --surface: #0c1422;
+    --border: var(--cc-border);
+    --text: var(--cc-text);
+    --text-muted: var(--cc-muted);
+    --text-faint: #718198;
+    --primary-bg: #232152;
+    --red-bg: #3a1512;
+    --amber-bg: #3a2c12;
+    --green-bg: #10281c;
+    --teal-bg: #0b2f38;
+    --purple-bg: #2a2150;
+    --shadow-sm:0 4px 18px rgba(0,0,0,.20);
+    --shadow-md:0 10px 35px rgba(0,0,0,.28);
+    --shadow-lg:0 20px 60px rgba(0,0,0,.40);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  a{ color: var(--primary); }
+
+  h1, h2, h3, h4,
+  .sidebar-brand span:not(.mark),
+  .nav-item span:not(.icon):not(.badge-count),
+  .hero-btn, .feature-card .go,
+  .page-head h1, .panel-head h2,
+  .stat-num, .grammar-score-meta b{
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  ::-webkit-scrollbar{ width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track{ background: transparent; }
+  ::-webkit-scrollbar-thumb{ background: linear-gradient(180deg,var(--cc-blue),var(--cc-purple)); border-radius: 6px; }
+  html[data-theme="dark"] ::-webkit-scrollbar-track{ background:#050b14; }
+
+  /* ============ COLOR SCHEMES ============ */
+  html[data-accent="indigo"]{ --primary: #4f46e5; --primary-dark: #4338ca; --primary-bg: #eef2ff; --primary-light: #7c72f5; }
+  html[data-accent="ocean"]{ --primary: #0284c7; --primary-dark: #0369a1; --primary-bg: #e0f2fe; --primary-light: #38bdf8; }
+  html[data-accent="forest"]{ --primary: #15803d; --primary-dark: #166534; --primary-bg: #dcfce7; --primary-light: #4ade80; }
+  html[data-accent="sunset"]{ --primary: #ea580c; --primary-dark: #c2410c; --primary-bg: #ffedd5; --primary-light: #fb923c; }
+  html[data-accent="berry"]{ --primary: #be185d; --primary-dark: #9d174d; --primary-bg: #fce7f3; --primary-light: #f472b6; }
+  html[data-theme="dark"][data-accent="indigo"]{ --primary-bg: #232152; }
+  html[data-theme="dark"][data-accent="ocean"]{ --primary-bg: #0c2c3d; }
+  html[data-theme="dark"][data-accent="forest"]{ --primary-bg: #0e2a1a; }
+  html[data-theme="dark"][data-accent="sunset"]{ --primary-bg: #3a220f; }
+  html[data-theme="dark"][data-accent="berry"]{ --primary-bg: #3a1230; }
+
+  /* ============ APP SHELL ============ */
+  .app-shell{ display: flex; min-height: 100vh; }
+
+  .sidebar{
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: linear-gradient(180deg,#07101d 0%,#050b14 100%);
+    color: var(--sidebar-text);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    z-index: 30;
+    border-right:1px solid rgba(34,211,238,.12);
+  }
+
+  .sidebar-brand{
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 1rem 1.1rem;
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: #fff;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background:rgba(255,255,255,.015);
+  }
+
+  .sidebar-brand .mark{
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sidebar-brand .mark svg{ width: 18px; height: 18px; }
+
+  .brand-icon{
+    width: 1em; height: 1em;
+    display: inline-block;
+    vertical-align: -0.15em;
+    margin-right: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .cc-mascot{
+    width:52px;height:52px;object-fit:contain;border-radius:50%;display:block;flex-shrink:0;
+    filter:drop-shadow(0 0 10px rgba(34,211,238,.30)) drop-shadow(0 0 16px rgba(139,92,246,.18));
+    transition:transform .25s ease,filter .25s ease;
+  }
+  .cc-mascot:hover{transform:scale(1.06);}
+  .cc-brand-name{display:flex;flex-direction:column;line-height:1.05;min-width:0;}
+  .cc-brand-name strong{font-family:var(--font-display);font-size:.88rem;letter-spacing:.04em;color:#fff;white-space:nowrap;}
+  .cc-brand-name small{
+    margin-top:.25rem;font-size:.55rem;letter-spacing:.14em;font-weight:700;
+    background:linear-gradient(90deg,var(--cc-cyan),var(--cc-purple));
+    -webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;
+  }
+
+  .sidebar-nav{
+    padding: 1rem 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+  }
+
+  .sidebar-section-label{
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--sidebar-text-dim);
+    padding: 0.9rem 0.6rem 0.4rem;
+  }
+
+  .nav-item{
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 0.7rem;
+    border-radius: 8px;
+    color: var(--sidebar-text);
+    background: none;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: background 0.15s ease, color 0.15s ease;
+    position: relative;
+  }
+
+  .nav-item .icon{ font-size: 1rem; width: 20px; text-align: center; flex-shrink:0; }
+  .nav-item .badge-count{
+    margin-left: auto;
+    background: rgba(255,255,255,0.08);
+    color: var(--sidebar-text);
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.1rem 0.45rem;
+    border-radius: 10px;
+  }
+
+  .nav-item:hover{ background: var(--sidebar-hover); color: #fff; }
+
+  .nav-item.active{ background: var(--primary); color: #fff; }
+  .nav-item.active .badge-count{ background: rgba(255,255,255,0.2); }
+
+  .sidebar-footer{
+    padding: 0.9rem 1rem 1.1rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .theme-toggle-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--sidebar-text);
+  }
+
+  .switch{
+    width: 38px; height: 21px;
+    background: #33363e;
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+    border: none;
+  }
+  .switch::after{
+    content:"";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 17px; height: 17px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+  }
+  .switch.on{ background: var(--primary); }
+  .switch.on::after{ transform: translateX(17px); }
+
+  .text-size-controls{ display: flex; gap: 0.3rem; }
+  .text-size-btn{
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: #23262d;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--sidebar-text);
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .text-size-btn:hover{ background: var(--primary); color: #fff; }
+
+  .sidebar-note{
+    font-size: 0.72rem;
+    color: var(--sidebar-text-dim);
+    line-height: 1.5;
+  }
+
+  /* ============ COMPACT MODE ============ */
+  body.compact .panel-body{ padding: 0.85rem; }
+  body.compact .panel-head{ padding: 0.65rem 0.9rem; }
+  body.compact .content{ padding-top: 1.2rem; }
+  body.compact .grid{ gap: 1rem; }
+  body.compact textarea.editor-input,
+  body.compact textarea.prose-input{ min-height: 230px; }
+  body.compact .hero{ padding: 1.8rem 1.8rem; }
+  body.compact .feature-card{ padding: 1.1rem; }
+  body.compact .steps-panel, body.compact .theme-panel .panel-body{ padding: 1.1rem 1.3rem; }
+  body.compact .issue{ padding: 0.65rem 0.8rem; }
+
+  /* ============ MAIN AREA ============ */
+  .main-area{ flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+  .topbar{
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.85rem 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    gap: 1rem;
+  }
+  html[data-theme="dark"] .topbar{background:rgba(6,11,20,.88);border-bottom:1px solid rgba(34,211,238,.12);backdrop-filter:blur(16px);}
+
+  .breadcrumb{
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .breadcrumb-mascot{width:30px;height:30px;object-fit:contain;border-radius:50%;filter:drop-shadow(0 0 7px rgba(34,211,238,.35));flex-shrink:0;}
+  .breadcrumb strong{color:var(--text);}
+  html[data-theme="dark"] .breadcrumb strong{color:#fff;}
+  .breadcrumb b{ color: var(--text); font-weight: 600; }
+
+  .topbar-right{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  .kbd{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .content{
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 1.75rem 4rem;
+    flex: 1;
+  }
+
+  .view{ display: none; animation: fadeIn 0.25s ease; }
+  .view.active{ display: block; }
+
+  @keyframes fadeIn{ from{ opacity:0; transform: translateY(6px);} to{ opacity:1; transform: translateY(0);} }
+
+  @media (max-width: 900px){
+    .sidebar{ width: 72px; }
+    .sidebar-brand span:not(.mark){ display:none; }
+    .cc-brand-name{display:none;}
+    .nav-item span:not(.icon){ display:none; }
+    .nav-item{ justify-content: center; }
+    .sidebar-footer{ align-items: center; }
+    .theme-toggle-row span:first-child{ display:none; }
+    .sidebar-note{ display:none; }
+    .grid{ grid-template-columns: 1fr !important; }
+    .sidebar-brand{justify-content:center;padding:.9rem .5rem;}
+  }
+
+  /* ============ HOME PAGE ============ */
+  .hero{
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    border-radius: 16px;
+    padding: 3rem 2.5rem;
+    color: #fff;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  html[data-theme="dark"] .hero{
+    background:radial-gradient(circle at 82% 25%,rgba(139,92,246,.28),transparent 34%),
+      radial-gradient(circle at 65% 80%,rgba(34,211,238,.18),transparent 30%),
+      linear-gradient(135deg,#081524 0%,#0b1830 50%,#11112c 100%);
+    border:1px solid rgba(34,211,238,.16);
+    box-shadow:0 20px 70px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .hero::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image: radial-gradient(circle at 85% 20%, rgba(255,255,255,0.15), transparent 45%);
+    pointer-events:none;
+  }
+  html[data-theme="dark"] .hero::after{
+    content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(34,211,238,.035) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(34,211,238,.035) 1px,transparent 1px);
+    background-size:36px 36px;pointer-events:none;
+  }
+  .hero-blob{
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    pointer-events: none;
+  }
+  .hero-blob.b1{ width: 180px; height: 180px; top: -60px; right: 40px; animation: floatBlob 7s ease-in-out infinite; }
+  .hero-blob.b2{ width: 90px; height: 90px; bottom: -30px; right: 200px; animation: floatBlob 5.5s ease-in-out infinite reverse; }
+  .hero-blob.b3{ width: 50px; height: 50px; top: 30px; right: 260px; animation: floatBlob 6.5s ease-in-out infinite 0.5s; }
+  @keyframes floatBlob{
+    0%, 100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(-14px, 14px) scale(1.08); }
+  }
+  .hero > :not(.hero-blob):not(.hero-mascot){position:relative;z-index:3;}
+  .hero-eyebrow{
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    opacity: 0.85;
+    margin-bottom: 0.7rem;
+    color:var(--cc-cyan);
+  }
+  .hero h1{
+    font-size: clamp(1.7rem, 3.5vw, 2.4rem);
+    font-weight: 800;
+    margin: 0 0 0.7rem;
+    letter-spacing: -0.02em;
+    max-width: 26ch;
+  }
+  .hero h1 .logic-word{
+    background:linear-gradient(90deg,var(--cc-cyan),var(--cc-blue),var(--cc-purple));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p{
+    font-size: 1.02rem;
+    opacity: 0.92;
+    max-width: 52ch;
+    margin: 0 0 1.5rem;
+    line-height: 1.6;
+  }
+  .hero-actions{ display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .hero-btn{
+    background: #fff;
+    color: var(--primary-dark);
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.7rem 1.3rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  html[data-theme="dark"] .hero-btn:not(.ghost){
+    background:linear-gradient(135deg,var(--cc-blue),var(--cc-purple));color:#fff;
+    box-shadow:0 8px 24px rgba(22,140,255,.25);
+  }
+  html[data-theme="dark"] .hero-btn:not(.ghost):hover{box-shadow:0 12px 30px rgba(34,211,238,.30);}
+  .hero-btn:hover{ transform: translateY(-2px); }
+  .hero-btn.ghost{
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+  }
+  .hero-mascot{
+    position:absolute;right:3rem;bottom:-2rem;width:270px;height:270px;object-fit:contain;
+    filter:drop-shadow(0 0 20px rgba(34,211,238,.22)) drop-shadow(0 20px 30px rgba(0,0,0,.35));
+    z-index:2;transition:transform .35s ease;
+  }
+  .hero:hover .hero-mascot{transform:translateY(-7px) scale(1.025);}
+
+  .section-label{
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+  html[data-theme="dark"] .section-label{color:var(--cc-cyan);}
+
+  .feature-grid{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+    margin-bottom: 2.5rem;
+  }
+  @media (max-width: 900px){ .feature-grid{ grid-template-columns: 1fr; } }
+
+  .feature-card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.6rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
+  }
+  html[data-theme="dark"] .feature-card{
+    background:linear-gradient(145deg,rgba(17,29,49,.96),rgba(10,20,34,.96));
+    border-color:rgba(34,211,238,.12);box-shadow:0 8px 30px rgba(0,0,0,.20);
+  }
+  .feature-card:hover{
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    border-color: var(--primary);
+  }
+  .feature-card:active{ transform: translateY(-1px) scale(0.99); }
+  .feature-card.dragging{ opacity: 0.4; }
+  .feature-card:hover .feature-icon{ transform: scale(1.12) rotate(-6deg); }
+  .drag-handle{
+    position: absolute; top: 0.9rem; right: 1rem;
+    color: var(--text-faint); font-size: 0.9rem; cursor: grab;
+    opacity: 0; transition: opacity 0.15s ease;
+  }
+  .feature-card:hover .drag-handle{ opacity: 1; }
+  .feature-icon{
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    margin-bottom: 0.4rem;
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1);
+    box-shadow:0 0 20px rgba(34,211,238,.08);
+  }
+  .feature-icon.bugs{ background: var(--red-bg); }
+  .feature-icon.math{ background: var(--teal-bg); }
+  .feature-icon.grammar{ background: var(--purple-bg); }
+
+  .feature-card h3{ font-size: 1.05rem; margin: 0; }
+  .feature-card p{ font-size: 0.88rem; color: var(--text-muted); margin: 0; line-height: 1.55; }
+  .feature-card .go{
+    margin-top: 0.5rem;
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: var(--primary);
+    display: flex; align-items: center; gap: 0.3rem;
+    transition: gap 0.15s ease;
+  }
+  .feature-card:hover .go{ gap: 0.55rem; }
+
+  .steps-panel{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.8rem 2rem;
+    margin-bottom: 2rem;
+  }
+  html[data-theme="dark"] .steps-panel{
+    background:linear-gradient(145deg,rgba(17,29,49,.96),rgba(10,20,34,.96));
+    border-color:rgba(34,211,238,.12);box-shadow:0 8px 30px rgba(0,0,0,.20);
+  }
+  .steps-row{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.2rem;
+  }
+  @media (max-width: 900px){ .steps-row{ grid-template-columns: 1fr; } }
+  .step-block{ display: flex; gap: 0.9rem; }
+  .step-block .num{
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--primary-bg);
+    color: var(--primary-dark);
+    font-weight: 700;
+    font-size: 0.82rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-block h4{ margin: 0 0 0.25rem; font-size: 0.92rem; }
+  .step-block p{ margin: 0; font-size: 0.83rem; color: var(--text-muted); line-height: 1.5; }
+
+  .stats-row{
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  @media (max-width: 900px){ .stats-row{ grid-template-columns: 1fr; } }
+  .stat-card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  html[data-theme="dark"] .stat-card{
+    background:linear-gradient(145deg,rgba(17,29,49,.96),rgba(10,20,34,.96));
+    border-color:rgba(34,211,238,.12);box-shadow:0 8px 30px rgba(0,0,0,.20);
+  }
+  .stat-card .stat-icon{ font-size: 1.4rem; }
+  .stat-card .stat-num{ font-size: 1.35rem; font-weight: 800; line-height: 1.1; }
+  .stat-card .stat-lbl{ font-size: 0.78rem; color: var(--text-muted); }
+
+  /* ============ COLOR SCHEME PICKER ============ */
+  .theme-panel{ margin-bottom: 2rem; }
+  .theme-picker{ display: flex; gap: 1rem; flex-wrap: wrap; }
+  .swatch-btn{
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    padding: 0;
+  }
+  .swatch-btn:hover{ transform: translateY(-3px) scale(1.05); box-shadow: var(--shadow-md); }
+  .swatch-btn.active{ border-color: var(--text); }
+  .swatch-btn.active::after{
+    content: "✓";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1.05rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+
+  /* ============ PAGE HEAD ============ */
+  .page-head{ margin-bottom: 1.75rem; display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+  .page-head h1{ font-size: 1.5rem; font-weight: 800; margin: 0 0 0.35rem; letter-spacing: -0.02em; }
+  html[data-theme="dark"] .page-head h1{color:var(--cc-cyan);}
+  .page-head p{ color: var(--text-muted); margin: 0; font-size: 0.93rem; max-width: 60ch; }
+  .back-link{
+    background: none; border: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer;
+    display: flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0; font-weight: 500;
+  }
+  .back-link:hover{ color: var(--primary); }
+
+  .grid{ display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1.5rem; align-items: start; }
+
+  .panel{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  html[data-theme="dark"] .panel{
+    background:linear-gradient(145deg,rgba(17,29,49,.96),rgba(10,20,34,.96));
+    border-color:rgba(34,211,238,.12);box-shadow:0 8px 30px rgba(0,0,0,.20);
+  }
+  .panel:hover,.feature-card:hover{
+    border-color:rgba(34,211,238,.30);
+    box-shadow:0 12px 40px rgba(0,0,0,.30),0 0 0 1px rgba(34,211,238,.04);
+  }
+  .panel-head{
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+  }
+  .panel-head h2{ font-size: 0.95rem; font-weight: 600; margin: 0; display: flex; align-items: center; }
+  .panel-head h2 .brand-icon{ color: var(--primary); }
+  .panel-body{ padding: 1.25rem; }
+
+  .lang-pills{ display: flex; gap: 0.4rem; background: var(--bg); padding: 0.25rem; border-radius: 8px; border: 1px solid var(--border); flex-wrap: wrap; }
+  .lang-pill{
+    font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500; padding: 0.4rem 0.75rem;
+    border-radius: 6px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s ease;
+  }
+  .lang-pill:hover{ color: var(--text); }
+  .lang-pill.active{ background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); font-weight: 600; }
+
+  .editor-wrap{ border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  html[data-theme="dark"] .editor-wrap{border-color:rgba(34,211,238,.16);box-shadow:0 10px 35px rgba(0,0,0,.28);}
+  .editor-topbar{ background: var(--bg); border-bottom: 1px solid var(--border); padding: 0.5rem 0.9rem; display: flex; align-items: center; gap: 0.4rem; }
+  html[data-theme="dark"] .editor-topbar{background:#08111e;}
+  .dot{ width: 9px; height: 9px; border-radius: 50%; }
+  .dot.r{ background: #ff5f57; } .dot.y{ background: #febc2e; } .dot.g{ background: #28c840; }
+  .editor-filename{ margin-left: 0.6rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-faint); }
+  .editor-counter{ margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+
+  textarea.editor-input{
+    width: 100%; min-height: 320px; border: none; background: #1a1d21; color: #e4e7ec;
+    padding: 1rem 1.1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.7;
+    resize: vertical; outline: none; display: block;
+  }
+  html[data-theme="dark"] textarea.editor-input{background:#050b14;}
+  textarea.editor-input::placeholder{ color: #667085; }
+
+  textarea.prose-input{
+    width: 100%; min-height: 320px; border: none; background: var(--surface); color: var(--text);
+    padding: 1.1rem 1.2rem; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.75;
+    resize: vertical; outline: none; display: block;
+  }
+  textarea.prose-input::placeholder{ color: var(--text-faint); }
+
+  input.math-input{
+    width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 1.05rem; outline: none; background: var(--bg); color: var(--text);
+  }
+  input.math-input:focus{ border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-bg); }
+
+  .action-row{ display: flex; gap: 0.7rem; margin-top: 1rem; align-items: center; }
+  .hint-text{ font-size: 0.78rem; color: var(--text-faint); margin-top: 0.6rem; }
+
+  button.btn{
+    font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 600; padding: 0.65rem 1.15rem;
+    border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+    display: inline-flex; align-items: center; gap: 0.45rem;
+  }
+  button.btn:active{ transform: scale(0.96); }
+  button.btn.primary{ background: var(--primary); color: #fff; flex: 1; justify-content: center; }
+  button.btn.primary:hover{ background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  button.btn.primary:active{ transform: scale(0.96); }
+  button.btn.primary:disabled{ background: #c7c9f5; cursor: not-allowed; transform: none; box-shadow: none; }
+  button.btn.secondary{ background: var(--surface); color: var(--text-muted); border-color: var(--border); }
+  button.btn.secondary:hover{ background: var(--bg); color: var(--text); }
+  button.btn.icon-btn{ padding: 0.5rem 0.7rem; background: var(--bg); color: var(--text-muted); border-color: var(--border); font-size: 0.8rem; }
+  button.btn.icon-btn:hover{ color: var(--text); border-color: var(--primary); transform: translateY(-1px); }
+
+  .history-row{ display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.9rem; }
+  .history-chip{
+    font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.3rem 0.6rem; cursor: pointer; color: var(--text-muted); max-width: 220px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: all 0.15s ease;
+  }
+  .history-chip:hover{ border-color: var(--primary); color: var(--text); }
+
+  .empty-state{ text-align: center; padding: 3.2rem 1.5rem; color: var(--text-faint); }
+  .empty-state .icon{ font-size: 1.8rem; margin-bottom: 0.7rem; display: block; opacity: 0.6; }
+  .empty-state p{ margin: 0; font-size: 0.92rem; }
+
+  .clean-state{ text-align: center; padding: 2.6rem 1.5rem; }
+  .clean-state .badge{
+    display: inline-flex; align-items: center; gap: 0.4rem; background: var(--green-bg); color: var(--green);
+    font-weight: 600; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 20px;
+  }
+  .clean-state p{ margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem; }
+
+  .summary-row{ display: flex; gap: 0.7rem; margin-bottom: 1.1rem; flex-wrap: wrap; }
+  .summary-chip{ flex: 1; min-width: 80px; text-align: center; padding: 0.8rem 0.5rem; border-radius: 8px; border: 1px solid var(--border); }
+  .summary-chip .num{ display: block; font-size: 1.5rem; font-weight: 800; line-height: 1; }
+  .summary-chip .lbl{ font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-top: 0.3rem; display: block; }
+  .summary-chip.high{ background: var(--red-bg); } .summary-chip.high .num{ color: var(--red); }
+  .summary-chip.medium{ background: var(--amber-bg); } .summary-chip.medium .num{ color: var(--amber); }
+  .summary-chip.low{ background: var(--green-bg); } .summary-chip.low .num{ color: var(--green); }
+
+  .issue-list{ display: flex; flex-direction: column; gap: 0.7rem; max-height: 520px; overflow-y: auto; padding-right: 0.25rem; }
+  .issue{ border: 1px solid var(--border); border-radius: 8px; padding: 0.95rem 1.05rem; border-left-width: 3px; }
+  .issue.high{ border-left-color: var(--red); } .issue.medium{ border-left-color: var(--amber); } .issue.low{ border-left-color: var(--green); }
+  .issue-head{ display: flex; justify-content: space-between; align-items: flex-start; gap: 0.7rem; margin-bottom: 0.35rem; }
+  .issue-title{ font-weight: 600; font-size: 0.92rem; }
+  .badge-sev{ font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.18rem 0.5rem; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+  .badge-sev.high{ background: var(--red-bg); color: var(--red); } .badge-sev.medium{ background: var(--amber-bg); color: var(--amber); } .badge-sev.low{ background: var(--green-bg); color: var(--green); }
+  .issue-desc{ font-size: 0.87rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 0.6rem; }
+  .issue-code{ background: #1a1d21; color: #d5d8dd; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; padding: 0.55rem 0.75rem; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+  .issue-code .lineno{ color: #667085; margin-right: 0.5rem; } .issue-code .code{ color: #f5c518; }
+  .issue-fix{ margin-top: 0.6rem; font-size: 0.83rem; color: var(--text); background: var(--primary-bg); border-radius: 6px; padding: 0.5rem 0.7rem; }
+  .issue-fix b{ color: var(--primary-dark); }
+
+  .result-actions{ display:flex; gap:0.5rem; margin-top:1rem; }
+
+  .learning-panel{ margin-top: 1.5rem; }
+  .step-list{ display: flex; flex-direction: column; }
+  .step-item{ display: flex; gap: 1rem; align-items: flex-start; padding: 0.85rem 0; border-bottom: 1px solid var(--border); }
+  .step-item:last-child{ border-bottom: none; }
+  .step-num{ width: 26px; height: 26px; border-radius: 50%; background: var(--primary-bg); color: var(--primary-dark); font-size: 0.78rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-item.checkable{ cursor: pointer; }
+  .step-item.done .step-text{ text-decoration: line-through; color: var(--text-faint); }
+  .step-item.done .step-num{ background: var(--green-bg); color: var(--green); }
+  .step-text{ font-size: 0.9rem; padding-top: 0.15rem; }
+
+  .math-result{ text-align: center; padding: 1.5rem 1rem; }
+  .math-result .answer{ font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 0.4rem; }
+  .math-result .expr{ font-family: 'JetBrains Mono', monospace; color: var(--text-muted); font-size: 0.95rem; }
+  .math-steps{ margin-top: 1.3rem; text-align: left; }
+  .math-step-row{ display: flex; gap: 0.8rem; padding: 0.65rem 0; border-bottom: 1px dashed var(--border); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; align-items: baseline; }
+  .math-step-row:last-child{ border-bottom: none; }
+  .math-step-label{ color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 0.78rem; min-width: 90px; flex-shrink: 0; }
+
+  .example-list{ display: flex; flex-direction: column; gap: 0.5rem; }
+  .example-btn{
+    text-align: left; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem 0.8rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--text); cursor: pointer; transition: all 0.15s ease;
+  }
+  .example-btn:hover{ border-color: var(--primary); background: var(--primary-bg); }
+
+  .highlighted-text{ border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; font-size: 0.92rem; line-height: 1.85; background: var(--bg); white-space: pre-wrap; }
+  .flag{ background: var(--amber-bg); border-bottom: 2px solid var(--amber); border-radius: 2px; padding: 0 1px; }
+  .flag.high{ background: var(--red-bg); border-bottom-color: var(--red); }
+
+  .fix-row{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
+  .issue-fix .fix-btn{ padding:.25rem .6rem; font-size:.74rem; }
+  .path-group{ font-family:var(--font-display); font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--primary); padding:1rem 0 .2rem; }
+  .path-group:first-child{ padding-top:0; }
+
+  .grammar-score{ display:flex; align-items:center; gap:1.1rem; padding:1rem 1.1rem; margin-bottom:1.1rem; border:1px solid var(--border); border-radius:10px; background:var(--bg); }
+  .grammar-score-ring{ --pct:0; --clr:var(--green); width:72px; height:72px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:conic-gradient(var(--clr) calc(var(--pct) * 1%), var(--border) 0); position:relative; }
+  .grammar-score-ring::before{ content:""; position:absolute; inset:7px; border-radius:50%; background:var(--surface); }
+  .grammar-score-ring span{ position:relative; font-family:var(--font-display); font-weight:800; font-size:1.25rem; }
+  .grammar-score-meta{ display:flex; flex-direction:column; gap:.2rem; font-size:.82rem; color:var(--text-muted); }
+  .grammar-score-meta b{ font-size:1rem; color:var(--text); }
+
+  footer.site-footer{ text-align: center; padding: 2rem 1rem 3rem; font-size: 0.8rem; color: var(--text-faint); }
+
+  .toast-wrap{ position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; z-index: 100; }
+  .toast{
+    background: var(--text); color: var(--surface); padding: 0.7rem 1.1rem; border-radius: 8px; font-size: 0.85rem;
+    box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 0.5rem;
+    animation: toastIn 0.2s ease, toastOut 0.2s ease 2.3s forwards;
+  }
+  @keyframes toastIn{ from{ opacity:0; transform: translateY(10px);} to{ opacity:1; transform: translateY(0);} }
+  @keyframes toastOut{ to{ opacity:0; transform: translateY(-6px); } }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition: none !important; animation: none !important; } }
+
+  @media (max-width:900px){
+    .hero-mascot{width:150px;height:150px;right:.5rem;bottom:-.5rem;opacity:.85;}
+    .hero{padding-right:7rem;}
+  }
+  @media (max-width:600px){
+    .hero-mascot{position:relative;width:120px;height:120px;right:auto;bottom:auto;margin:1rem auto 0;display:block;}
+    .hero{padding-right:1.5rem;text-align:center;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand" data-nav="home">
+      <img src="https://raw.githubusercontent.com/hashimrasheed275/Code-debugger/main/code-crusader-mascot.png" alt="Code Crusader mascot" class="cc-mascot">
+      <div class="cc-brand-name">
+        <strong>CODE CRUSADER</strong>
+        <small>LOGIC DECODED</small>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Overview</div>
+      <button class="nav-item active" data-nav="home"><span class="icon">🏠</span><span>Home</span></button>
+
+      <div class="sidebar-section-label">Tools</div>
+      <button class="nav-item" data-nav="bugs"><span class="icon">🐞</span><span>Debug chamber</span><span class="badge-count" id="navCountBugs" style="display:none;">0</span></button>
+      <button class="nav-item" data-nav="math"><span class="icon">Σ</span><span>Logic solver</span></button>
+      <button class="nav-item" data-nav="grammar"><span class="icon">✎</span><span>Grammar guard</span><span class="badge-count" id="navCountGrammar" style="display:none;">0</span></button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="theme-toggle-row">
+        <span>Dark mode</span>
+        <button class="switch" id="themeSwitch" aria-label="Toggle dark mode"></button>
+      </div>
+      <div class="theme-toggle-row">
+        <span>Compact mode</span>
+        <button class="switch" id="compactSwitch" aria-label="Toggle compact mode"></button>
+      </div>
+      <div class="theme-toggle-row">
+        <span>Text size</span>
+        <div class="text-size-controls">
+          <button class="text-size-btn" id="textSizeDown" aria-label="Decrease text size">A−</button>
+          <button class="text-size-btn" id="textSizeUp" aria-label="Increase text size">A+</button>
+        </div>
+      </div>
+      <div class="sidebar-note">Everything runs locally in your browser. Nothing you type is ever sent anywhere.</div>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div class="breadcrumb" id="breadcrumb">
+        <img src="https://raw.githubusercontent.com/hashimrasheed275/Code-debugger/main/code-crusader-mascot.png" alt="" class="breadcrumb-mascot">
+        <strong>CODE CRUSADER</strong>
+        <span>/</span>
+        <b>Home</b>
+      </div>
+      <div class="topbar-right">
+        <span><span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> to run</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- HOME -->
+      <div class="view active" id="view-home">
+        <div class="hero">
+          <span class="hero-blob b1"></span>
+          <span class="hero-blob b2"></span>
+          <span class="hero-blob b3"></span>
+          <div class="hero-eyebrow">CODE CRUSADER</div>
+          <h1><span class="logic-word">Logic,</span> decoded.</h1>
+          <p>Your intelligent problem-solving companion for code, mathematics and writing. Find errors, understand why they happen, and solve them.</p>
+          <div class="hero-actions">
+            <button class="hero-btn" data-nav="bugs">&lt;/&gt;&nbsp; Debug chamber</button>
+            <button class="hero-btn ghost" data-nav="math">Σ&nbsp; Logic solver</button>
+            <button class="hero-btn ghost" data-nav="grammar">Aa&nbsp; Grammar guard</button>
+          </div>
+          <img src="https://raw.githubusercontent.com/hashimrasheed275/Code-debugger/main/code-crusader-mascot.png" alt="Code Crusader — your logic-solving companion" class="hero-mascot">
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card"><span class="stat-icon">🐞</span><div><span class="stat-num" id="statBugs">0</span><div class="stat-lbl">Code scans run</div></div></div>
+          <div class="stat-card"><span class="stat-icon">Σ</span><div><span class="stat-num" id="statMath">0</span><div class="stat-lbl">Problems solved</div></div></div>
+          <div class="stat-card"><span class="stat-icon">✎</span><div><span class="stat-num" id="statGrammar">0</span><div class="stat-lbl">Texts checked</div></div></div>
+        </div>
+
+        <div class="section-label" style="display:flex; align-items:center; justify-content:space-between;">
+          <span>Choose a tool</span>
+          <span style="font-weight:500; text-transform:none; letter-spacing:normal; color:var(--text-faint); font-size:0.78rem;">✥ drag cards to reorder</span>
+        </div>
+        <div class="feature-grid" id="featureGrid">
+          <button class="feature-card" data-nav="bugs" draggable="true">
+            <span class="drag-handle">✥</span>
+            <div class="feature-icon bugs">🐞</div>
+            <h3>Debug chamber</h3>
+            <p>Find the flaw. Understand the logic. Scan Python, JavaScript, Java, C++, or HTML for common mistakes with suggested fixes.</p>
+            <div class="go">Open Debug chamber →</div>
+          </button>
+          <button class="feature-card" data-nav="math" draggable="true">
+            <span class="drag-handle">✥</span>
+            <div class="feature-icon math">Σ</div>
+            <h3>Logic solver</h3>
+            <p>Work through the problem, step by step. Evaluate expressions and solve linear or quadratic equations with the working shown.</p>
+            <div class="go">Open Logic solver →</div>
+          </button>
+          <button class="feature-card" data-nav="grammar" draggable="true">
+            <span class="drag-handle">✥</span>
+            <div class="feature-icon grammar">✎</div>
+            <h3>Grammar guard</h3>
+            <p>Catch mistakes. Strengthen your writing. Spot punctuation, spelling, wording, run-on sentence, and passive-voice issues.</p>
+            <div class="go">Open Grammar guard →</div>
+          </button>
+        </div>
+
+        <div class="steps-panel">
+          <div class="section-label" style="margin-bottom:0;">How it works</div>
+          <div class="steps-row">
+            <div class="step-block"><div class="num">1</div><div><h4>Pick a tool</h4><p>Choose Debug chamber, Logic solver, or Grammar guard from the sidebar.</p></div></div>
+            <div class="step-block"><div class="num">2</div><div><h4>Paste your content</h4><p>Drop in code, an equation, or a paragraph — or try one of the built-in examples.</p></div></div>
+            <div class="step-block"><div class="num">3</div><div><h4>Get instant feedback</h4><p>See issues, fixes, and steps immediately — everything runs on-device.</p></div></div>
+          </div>
+        </div>
+
+        <div class="panel theme-panel">
+          <div class="panel-head"><h2><svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5a4.3 4.3 0 0 0 0 17c1 0 1.6-.5 1.6-1.3 0-.4-.15-.7-.4-1-.25-.3-.4-.6-.4-1 0-.8.65-1.4 1.45-1.4H15.6c2 0 3.6-1.6 3.6-3.6 0-4.2-3.4-8.7-7.2-8.7z" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="1.3"/><circle cx="9" cy="9.5" r="1" fill="currentColor"/><circle cx="14.5" cy="8.5" r="1" fill="currentColor"/><circle cx="8.5" cy="14" r="1" fill="currentColor"/></svg>Color scheme</h2></div>
+          <div class="panel-body">
+            <p style="font-size:0.86rem; color:var(--text-muted); margin:0 0 1.1rem;">Pick an accent color — it updates buttons, links, highlights, and the hero everywhere in the app.</p>
+            <div class="theme-picker" id="themePicker">
+              <button class="swatch-btn active" data-accent="indigo" data-label="Indigo" style="background:linear-gradient(135deg,#4f46e5,#7c72f5);" title="Indigo"></button>
+              <button class="swatch-btn" data-accent="ocean" data-label="Ocean" style="background:linear-gradient(135deg,#0284c7,#38bdf8);" title="Ocean"></button>
+              <button class="swatch-btn" data-accent="forest" data-label="Forest" style="background:linear-gradient(135deg,#15803d,#4ade80);" title="Forest"></button>
+              <button class="swatch-btn" data-accent="sunset" data-label="Sunset" style="background:linear-gradient(135deg,#ea580c,#fb923c);" title="Sunset"></button>
+              <button class="swatch-btn" data-accent="berry" data-label="Berry" style="background:linear-gradient(135deg,#be185d,#f472b6);" title="Berry"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEBUG CHAMBER -->
+      <div class="view" id="view-bugs">
+        <div class="page-head">
+          <div>
+            <h1>⚔️ Debug chamber</h1>
+            <p>Paste your code, run a scan, and get a personalized set of things to study based on what came up.</p>
+          </div>
+          <button class="back-link" data-nav="home">← Back to home</button>
+        </div>
+
+        <div class="grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Your code</h2>
+              <div class="lang-pills" id="langRow">
+                <button class="lang-pill active" data-lang="python">Python</button>
+                <button class="lang-pill" data-lang="javascript">JavaScript</button>
+                <button class="lang-pill" data-lang="java">Java</button>
+                <button class="lang-pill" data-lang="cpp">C++</button>
+                <button class="lang-pill" data-lang="html">HTML</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="editor-wrap">
+                <div class="editor-topbar">
+                  <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+                  <span class="editor-filename" id="filenameLabel">main.py</span>
+                  <span class="editor-counter" id="codeCounter">0 lines</span>
+                </div>
+                <textarea class="editor-input" id="codeInput" spellcheck="false" placeholder="Paste your code here… (or press Ctrl+Enter to scan)"></textarea>
+              </div>
+              <div class="action-row">
+                <button class="btn primary" id="analyzeBtn">Scan code</button>
+                <button class="btn secondary" id="clearBtn">Clear</button>
+              </div>
+              <div class="history-row" id="bugHistoryRow"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2><svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 12l3 3 6-6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Results</h2>
+              <span id="resultCountLabel" style="font-size:0.8rem; color:var(--text-muted);"></span>
+            </div>
+            <div class="panel-body">
+              <div id="resultsPanel">
+                <div class="empty-state"><span class="icon">↗</span><p>Run a scan to see results here.</p></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel learning-panel" id="learningPanel" style="display:none;">
+          <div class="panel-head"><h2>Suggested learning path</h2><span style="font-size:0.78rem; color:var(--text-faint);">Click a step to mark it done</span></div>
+          <div class="panel-body"><div class="step-list" id="stepList"></div></div>
+        </section>
+      </div>
+
+      <!-- LOGIC SOLVER -->
+      <div class="view" id="view-math">
+        <div class="page-head">
+          <div>
+            <h1>Σ Logic solver</h1>
+            <p>Type an expression to calculate, or an equation with "=" to solve for x — see the steps behind the answer.</p>
+          </div>
+          <button class="back-link" data-nav="home">← Back to home</button>
+        </div>
+
+        <div class="grid">
+          <section class="panel">
+            <div class="panel-head"><h2>Enter a problem</h2></div>
+            <div class="panel-body">
+              <input class="math-input" id="mathInput" placeholder="e.g. 3x + 5 = 20   or   (4 + 6) * 2 - 3^2" autocomplete="off">
+              <div class="action-row">
+                <button class="btn primary" id="solveBtn">Solve</button>
+                <button class="btn secondary" id="mathClearBtn">Clear</button>
+              </div>
+              <div class="history-row" id="mathHistoryRow"></div>
+
+              <div style="margin-top:1.4rem;">
+                <div class="section-label" style="margin-bottom:0.6rem;">Try an example</div>
+                <div class="example-list" id="mathExamples">
+                  <button class="example-btn" data-eq="3x + 5 = 20">3x + 5 = 20</button>
+                  <button class="example-btn" data-eq="2x^2 - 8x + 6 = 0">2x^2 - 8x + 6 = 0</button>
+                  <button class="example-btn" data-eq="(4 + 6) * 2 - 3^2">(4 + 6) * 2 - 3^2</button>
+                  <button class="example-btn" data-eq="x/2 + 7 = 10">x/2 + 7 = 10</button>
+                  <button class="example-btn" data-eq="sqrt(144) + 5*3">sqrt(144) + 5*3</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head"><h2><svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 5H7l5 7-5 7h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Solution</h2></div>
+            <div class="panel-body">
+              <div id="mathResultsPanel">
+                <div class="empty-state"><span class="icon">Σ</span><p>Enter a problem and press Solve.</p></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- GRAMMAR GUARD -->
+      <div class="view" id="view-grammar">
+        <div class="page-head">
+          <div>
+            <h1>✎ Grammar guard</h1>
+            <p>Paste text to catch punctuation slips, spelling mistakes, mixed-up words, run-ons, and other common writing issues.</p>
+          </div>
+          <button class="back-link" data-nav="home">← Back to home</button>
+        </div>
+
+        <div class="grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Your text</h2>
+              <span class="editor-counter" id="textCounter">0 words</span>
+            </div>
+            <div class="panel-body">
+              <div class="editor-wrap">
+                <textarea class="prose-input" id="textInput" spellcheck="false" placeholder="Paste a sentence or paragraph here… (or press Ctrl+Enter to check)"></textarea>
+              </div>
+              <div class="action-row">
+                <button class="btn primary" id="checkBtn">Check writing</button>
+                <button class="btn secondary" id="textClearBtn">Clear</button>
+              </div>
+              <div class="history-row" id="grammarHistoryRow"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2><svg class="brand-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 20l1-4.2L15.3 5.5a1.5 1.5 0 0 1 2.1 0l1.1 1.1a1.5 1.5 0 0 1 0 2.1L8.2 19 4 20z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 7.5l3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Feedback</h2>
+              <span id="grammarCountLabel" style="font-size:0.8rem; color:var(--text-muted);"></span>
+            </div>
+            <div class="panel-body">
+              <div id="grammarResultsPanel">
+                <div class="empty-state"><span class="icon">✎</span><p>Run a check to see feedback here.</p></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel learning-panel" id="grammarPreviewPanel" style="display:none;">
+          <div class="panel-head"><h2>Your text, with issues marked</h2></div>
+          <div class="panel-body"><div class="highlighted-text" id="highlightedText"></div></div>
+        </section>
+        <section class="panel learning-panel" id="grammarLearningPanel" style="display:none;">
+          <div class="panel-head"><h2>Suggested learning path</h2><span style="font-size:0.78rem; color:var(--text-faint);">Click a step to mark it done</span></div>
+          <div class="panel-body"><div class="step-list" id="grammarStepList"></div></div>
+        </section>
+      </div>
+
+    </div>
+
+    <footer class="site-footer">Code Crusader — runs entirely on-device, nothing you type ever leaves your browser.</footer>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // =================================================================
+  // UTILITIES
+  // =================================================================
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  const toastWrap = document.getElementById('toastWrap');
+  function showToast(msg, icon){
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `<span>${icon || '✓'}</span><span>${escapeHtml(msg)}</span>`;
+    toastWrap.appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+  }
+
+  function copyToClipboard(text, label){
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text)
+        .then(() => showToast((label||'Copied') + ' to clipboard', '📋'))
+        .catch(() => showToast('Could not copy — select and copy manually.', '⚠️'));
+    } else {
+      showToast('Clipboard not available in this browser.', '⚠️');
+    }
+  }
+
+  // ---------- Persistence helpers ----------
+  const STORAGE_KEY = 'codeCrusader.settings.v1';
+  function loadSettings(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch(e){ return {}; }
+  }
+  function saveSettings(patch){
+    try {
+      const cur = loadSettings();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.assign(cur, patch)));
+    } catch(e){ /* ignore quota errors */ }
+  }
+
+  // ---------- Confetti ----------
+  const CONFETTI_COLORS = ['#22d3ee','#168cff','#8b5cf6','#22c55e','#f59e0b','#ec4899'];
+  function fireConfetti(originEl){
+    const rect = originEl ? originEl.getBoundingClientRect() : { left: window.innerWidth/2, top: window.innerHeight/3, width: 0 };
+    const originX = rect.left + rect.width / 2;
+    const originY = rect.top;
+    for (let i = 0; i < 26; i++){
+      const piece = document.createElement('div');
+      const size = 6 + Math.random() * 6;
+      const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+      const dx = (Math.random() - 0.5) * 260;
+      const dy = 120 + Math.random() * 160;
+      const rot = (Math.random() - 0.5) * 540;
+      const dur = 900 + Math.random() * 500;
+      piece.style.cssText = `position:fixed; left:${originX}px; top:${originY}px; width:${size}px; height:${size * 0.6}px; background:${color}; z-index:200; pointer-events:none; border-radius:2px; opacity:1; transform:translate(0,0) rotate(0deg); transition: transform ${dur}ms cubic-bezier(.2,.6,.3,1), opacity ${dur}ms ease;`;
+      document.body.appendChild(piece);
+      requestAnimationFrame(() => {
+        piece.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+        piece.style.opacity = '0';
+      });
+      setTimeout(() => piece.remove(), dur + 60);
+    }
+  }
+
+  const CLEAN_PHRASES_CODE = ['Squeaky clean!', 'Nice one — no issues found!', "You're all set!", 'Great catch-free code!'];
+  const CLEAN_PHRASES_TEXT = ['Looks clean!', 'Nice writing!', "You're good to go!", 'Great job!'];
+  const FOUND_PHRASES = ['Found a few things to fix', "Here's what came up", 'A few leads to check out'];
+  const LOADING_PHRASES_CODE = ['Scanning for gremlins…', 'Reading between the lines…', 'Checking the logic…', 'Almost there…'];
+  const LOADING_PHRASES_TEXT = ['Reading closely…', 'Checking the details…', 'Polishing pass…', 'Almost done…'];
+
+  function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function rotateLoadingText(el, phrases, ms){
+    let i = 0;
+    el.textContent = phrases[0];
+    const id = setInterval(() => { i = (i + 1) % phrases.length; el.textContent = phrases[i]; }, ms);
+    return () => clearInterval(id);
+  }
+
+  // =================================================================
+  // THEME / COMPACT / TEXT SIZE / ACCENT (persisted)
+  // =================================================================
+  const saved = loadSettings();
+
+  const themeSwitch = document.getElementById('themeSwitch');
+  let darkMode = saved.dark !== undefined ? !!saved.dark : true;
+  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  themeSwitch.classList.toggle('on', darkMode);
+  themeSwitch.addEventListener('click', () => {
+    darkMode = !darkMode;
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    themeSwitch.classList.toggle('on', darkMode);
+    saveSettings({ dark: darkMode });
+    showToast(darkMode ? 'Dark mode on' : 'Light mode on', darkMode ? '🌙' : '☀️');
+  });
+
+  const compactSwitch = document.getElementById('compactSwitch');
+  let compactMode = !!saved.compact;
+  document.body.classList.toggle('compact', compactMode);
+  compactSwitch.classList.toggle('on', compactMode);
+  compactSwitch.addEventListener('click', () => {
+    compactMode = !compactMode;
+    document.body.classList.toggle('compact', compactMode);
+    compactSwitch.classList.toggle('on', compactMode);
+    saveSettings({ compact: compactMode });
+    showToast(compactMode ? 'Compact mode on' : 'Comfortable spacing restored', '📐');
+  });
+
+  let textScale = typeof saved.textScale === 'number' ? saved.textScale : 100;
+  const textSizeUp = document.getElementById('textSizeUp');
+  const textSizeDown = document.getElementById('textSizeDown');
+  function applyTextScale(){ document.documentElement.style.fontSize = textScale + '%'; }
+  applyTextScale();
+  textSizeUp.addEventListener('click', () => {
+    if (textScale >= 120) return;
+    textScale += 10; applyTextScale(); saveSettings({ textScale });
+    showToast('Text size increased', '🔎');
+  });
+  textSizeDown.addEventListener('click', () => {
+    if (textScale <= 85) return;
+    textScale -= 10; applyTextScale(); saveSettings({ textScale });
+    showToast('Text size decreased', '🔎');
+  });
+
+  // ---------- Color scheme ----------
+  const themePicker = document.getElementById('themePicker');
+  const savedAccent = saved.accent || 'indigo';
+  document.documentElement.setAttribute('data-accent', savedAccent);
+  [...themePicker.children].forEach(b => b.classList.toggle('active', b.dataset.accent === savedAccent));
+  themePicker.addEventListener('click', e => {
+    const btn = e.target.closest('.swatch-btn');
+    if (!btn) return;
+    document.documentElement.setAttribute('data-accent', btn.dataset.accent);
+    [...themePicker.children].forEach(b => b.classList.toggle('active', b === btn));
+    saveSettings({ accent: btn.dataset.accent });
+    showToast(`${btn.dataset.label} theme applied`, '🎨');
+  });
+
+  // =================================================================
+  // NAVIGATION
+  // =================================================================
+  const views = {
+    home: document.getElementById('view-home'),
+    bugs: document.getElementById('view-bugs'),
+    math: document.getElementById('view-math'),
+    grammar: document.getElementById('view-grammar')
+  };
+  const navItems = document.querySelectorAll('.nav-item');
+  const breadcrumb = document.getElementById('breadcrumb');
+  const pageLabels = { home: 'Home', bugs: 'Debug chamber', math: 'Logic solver', grammar: 'Grammar guard' };
+
+  function goTo(page){
+    Object.entries(views).forEach(([key, el]) => el.classList.toggle('active', key === page));
+    navItems.forEach(b => b.classList.toggle('active', b.dataset.nav === page));
+    breadcrumb.innerHTML = `<img src="https://raw.githubusercontent.com/hashimrasheed275/Code-debugger/main/code-crusader-mascot.png" alt="" class="breadcrumb-mascot"><strong>CODE CRUSADER</strong><span>/</span><b>${pageLabels[page]}</b>`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.querySelectorAll('[data-nav]').forEach(el => {
+    el.addEventListener('click', () => goTo(el.dataset.nav));
+  });
+
+  // ---------- Drag-to-reorder ----------
+  const featureGrid = document.getElementById('featureGrid');
+  let dragEl = null;
+  featureGrid.querySelectorAll('.feature-card').forEach(card => {
+    card.addEventListener('dragstart', () => { dragEl = card; card.classList.add('dragging'); });
+    card.addEventListener('dragend', () => { card.classList.remove('dragging'); dragEl = null; });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!dragEl || dragEl === card) return;
+      const rect = card.getBoundingClientRect();
+      const before = (e.clientX - rect.left) < rect.width / 2;
+      featureGrid.insertBefore(dragEl, before ? card : card.nextSibling);
+    });
+  });
+
+  // =================================================================
+  // SESSION STATS + HISTORY
+  // =================================================================
+  const stats = { bugs: 0, math: 0, grammar: 0 };
+  const statBugs = document.getElementById('statBugs');
+  const statMath = document.getElementById('statMath');
+  const statGrammar = document.getElementById('statGrammar');
+  const navCountBugs = document.getElementById('navCountBugs');
+  const navCountGrammar = document.getElementById('navCountGrammar');
+
+  function animateStatEl(el, to){
+    const from = parseInt(el.textContent, 10) || 0;
+    if (to <= from){ el.textContent = to; return; }
+    const dur = 400; const start = performance.now();
+    function tick(now){
+      const p = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(from + (to - from) * eased);
+      el.style.transform = `scale(${1 + 0.15 * Math.sin(p * Math.PI)})`;
+      if (p < 1) requestAnimationFrame(tick); else el.style.transform = 'scale(1)';
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function bumpStat(key){
+    stats[key]++;
+    if (key === 'bugs') animateStatEl(statBugs, stats.bugs);
+    if (key === 'math') animateStatEl(statMath, stats.math);
+    if (key === 'grammar') animateStatEl(statGrammar, stats.grammar);
+  }
+
+  const HISTORY_LIMIT = 5;
+  const history = { bugs: [], math: [], grammar: [] };
+
+  function pushHistory(key, value){
+    if (!value || !value.trim()) return;
+    history[key] = history[key].filter(v => v !== value);
+    history[key].unshift(value);
+    history[key] = history[key].slice(0, HISTORY_LIMIT);
+    renderHistory(key);
+  }
+
+  function renderHistory(key){
+    const rowMap = { bugs: 'bugHistoryRow', math: 'mathHistoryRow', grammar: 'grammarHistoryRow' };
+    const row = document.getElementById(rowMap[key]);
+    if (!row) return;
+    if (history[key].length === 0){ row.innerHTML = ''; return; }
+    row.innerHTML = `<span style="font-size:0.72rem;color:var(--text-faint);align-self:center;margin-right:0.2rem;">Recent:</span>` +
+      history[key].map((v,i) => {
+        const safe = escapeHtml(v.replace(/\n/g,' ').slice(0,28)) + (v.length > 28 ? '…' : '');
+        return `<button class="history-chip" data-key="${key}" data-idx="${i}" title="${escapeHtml(v)}">${safe}</button>`;
+      }).join('');
+  }
+
+  document.body.addEventListener('click', e => {
+    const chip = e.target.closest('.history-chip');
+    if (!chip) return;
+    const key = chip.dataset.key;
+    const idx = parseInt(chip.dataset.idx, 10);
+    const val = history[key][idx];
+    if (val === undefined) return;
+    if (key === 'bugs'){ codeInput.value = val; updateCodeCounter(); analyzeCode(); }
+    if (key === 'math'){ mathInput.value = val; solveMath(); }
+    if (key === 'grammar'){ textInput.value = val; updateTextCounter(); checkGrammar(); }
+  });
+
+  // =================================================================
+  // SYNTAX CHECKS (bracket balance + basic structural checks)
+  // =================================================================
+  function detectSyntaxErrors(code, lang){
+    const bugs = [];
+    const lineOf = idx => code.slice(0, idx).split('\n').length;
+
+    function stripForBalance(src, lang){
+      let out = src;
+      if (lang === 'python'){
+        out = out.replace(/("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|#[^\n]*)/g,
+          s => s.replace(/[^\n]/g, ' '));
+      } else if (lang === 'javascript' || lang === 'java' || lang === 'cpp'){
+        out = out
+          .replace(/\/\*[\s\S]*?\*\//g, s => s.replace(/[^\n]/g, ' '))
+          .replace(/\/\/[^\n]*/g, s => s.replace(/[^\n]/g, ' '))
+          .replace(/"(?:\\.|[^"\\\n])*"/g, s => s.replace(/[^\n]/g, ' '))
+          .replace(/'(?:\\.|[^'\\\n])*'/g, s => s.replace(/[^\n]/g, ' '))
+          .replace(/`(?:\\.|[^`\\])*`/g, s => s.replace(/[^\n]/g, ' '));
+      }
+      return out;
+    }
+
+    if (lang === 'python' || lang === 'javascript' || lang === 'java' || lang === 'cpp'){
+      const stripped = stripForBalance(code, lang);
+      const pairs = { ')': '(', ']': '[', '}': '{' };
+      const stack = [];
+      for (let i = 0; i < stripped.length; i++){
+        const ch = stripped[i];
+        if (ch === '(' || ch === '[' || ch === '{'){
+          stack.push({ ch, idx: i });
+        } else if (ch === ')' || ch === ']' || ch === '}'){
+          const top = stack.pop();
+          if (!top || top.ch !== pairs[ch]){
+            bugs.push({
+              severity: 'high',
+              title: `Unmatched closing "${ch}"`,
+              description: `A closing "${ch}" appears without a matching opening "${pairs[ch]}".`,
+              fix: `Remove the stray "${ch}" or add the missing "${pairs[ch]}".`,
+              concept: 'Syntax',
+              match: ch,
+              line: lineOf(i)
+            });
+          }
+        }
+      }
+      stack.forEach(t => {
+        bugs.push({
+          severity: 'high',
+          title: `Unclosed "${t.ch}"`,
+          description: `An opening "${t.ch}" is never closed.`,
+          fix: `Add the matching "${t.ch === '(' ? ')' : t.ch === '[' ? ']' : '}'}" or remove the opening.`,
+          concept: 'Syntax',
+          match: t.ch,
+          line: lineOf(t.idx)
+        });
+      });
+    }
+
+    return bugs;
+  }
+
+  // =================================================================
+  // DEBUG CHAMBER — pattern checks
+  // =================================================================
+  const BUG_PATTERNS = {
+    javascript: [
+      { re: /for\s*\([^;]*;\s*[^<>=!]*<=\s*[^.]*\.length/g, severity:'high', title:'Array index out of bounds',
+        desc:'Using <= with array.length will access an undefined element past the final index.',
+        fix:'Change <= to < in the loop condition.',
+        concept:'Array Indexing' },
+      { re: /==\s*null|null\s*==/g, severity:'medium', title:'Loose equality with null',
+        desc:'Using == can trigger type coercion and match null against undefined unexpectedly.',
+        fix:'Use === for a strict, predictable comparison.',
+        concept:'Type Coercion' },
+      { re: /\bvar\s+\w+/g, severity:'low', title:'Using var instead of let/const',
+        desc:'var has function scope and is hoisted, which can cause confusing bugs.',
+        fix:'Replace var with let or const.',
+        concept:'Variable Declarations' },
+    ],
+    python: [
+      { re: /except\s*:/g, severity:'high', title:'Bare except clause',
+        desc:'Catches every exception, including ones you never intended to hide, masking real bugs.',
+        fix:'Catch a specific exception type, e.g. except ValueError:',
+        concept:'Exception Handling' },
+      { re: /==\s*True|True\s*==|==\s*False|False\s*==/g, severity:'medium', title:'Explicit True/False comparison',
+        desc:'Comparing directly to True or False is redundant and less idiomatic.',
+        fix:'Use "if value:" instead of "if value == True:".',
+        concept:'Boolean Logic' },
+      { re: /range\(len\([^)]+\)\)/g, severity:'medium', title:'Using range(len()) pattern',
+        desc:'Indexing manually through range(len(x)) is less readable than iterating directly.',
+        fix:'Use enumerate(items) instead.',
+        concept:'Pythonic Code' },
+    ],
+    java: [
+      { re: /==\s*"[^"]*"|"[^"]*"\s*==/g, severity:'high', title:'String comparison with ==',
+        desc:'== compares object references in Java, not string contents.',
+        fix:'Use .equals() to compare string content.',
+        concept:'String Comparison' },
+      { re: /catch\s*\([^)]*\)\s*\{\s*\}/g, severity:'medium', title:'Empty catch block',
+        desc:'Swallowing an exception silently hides failures that should surface somewhere.',
+        fix:'Log the exception or handle it meaningfully.',
+        concept:'Exception Handling' },
+    ],
+    cpp: [
+      { re: /delete\s+\w+\s*;/g, severity:'high', title:'Using delete instead of delete[]',
+        desc:'Freeing an array with plain delete instead of delete[] causes undefined behavior.',
+        fix:'Use delete[] to free arrays allocated with new[].',
+        concept:'Memory Management' },
+    ],
+  };
+
+  const BUG_LEARNING_PATHS = {
+    'Array Indexing': ['Understand zero-based indexing', 'Practice writing loop boundaries by hand', 'Learn built-in array iteration methods'],
+    'Type Coercion': ['Learn the difference between == and ===', 'Study JavaScript type conversion rules', 'Practice comparing mixed types safely'],
+    'Exception Handling': ['Learn the exception hierarchy for your language', 'Study how errors should propagate', 'Practice structured logging instead of silent catches'],
+    'Boolean Logic': ['Understand truthy vs. falsy values', 'Learn short-circuit operators', 'Study clean conditional style'],
+    'String Comparison': ['Learn how references differ from values', 'Study .equals() and content comparison', 'Practice safe null-aware comparisons'],
+    'Pythonic Code': ['Learn core Python idioms', 'Study list/dict comprehensions', 'Practice rewriting loops the idiomatic way'],
+    'Debugging': ['Learn the logging module basics', 'Study log levels (debug/info/warn/error)', 'Practice attaching context to log messages'],
+    'Memory Management': ['Learn stack vs. heap allocation', 'Study RAII and smart pointers', 'Practice pairing every allocation with its correct release'],
+    'Accessibility': ['Learn WCAG basics for alt text and labels', 'Study how screen readers announce content', 'Practice auditing a page with an accessibility checker'],
+    'Security': ['Learn what window.opener exposes to a new tab', 'Study safe attributes for external links', 'Practice reviewing third-party links on a page'],
+    'HTML Structure': ['Learn the anatomy of a valid HTML5 document', 'Study the difference between void and container elements', 'Practice validating markup with an HTML validator'],
+    'Responsive Design': ['Learn how the viewport meta tag works', 'Study responsive breakpoints and units', 'Practice testing a page at multiple screen sizes'],
+    'Best Practices': ['Learn separation of concerns (HTML/CSS/JS)', 'Study unobtrusive JavaScript', 'Practice moving inline logic into script files'],
+    'Semantic HTML': ['Learn modern semantic elements (header, nav, main, footer)', 'Study why older presentational tags were phased out', 'Practice rewriting old markup using CSS equivalents'],
+    'Performance': ['Learn how browsers parse HTML and scripts', 'Study the difference between async and defer', 'Practice auditing render-blocking resources'],
+    'Syntax': ['Learn how your language pairs brackets, quotes and block endings', 'Use an editor with bracket matching and syntax highlighting', 'Read compiler/interpreter error messages from the first error down'],
+    'Variable Declarations': ['Learn block scoping vs. function scoping', 'Study hoisting behavior', 'Practice preferring const, then let, then var'],
+  };
+
+  const BUG_EXAMPLES = {
+    python: 'def calculate_total(items):\n    for i in range(len(items)):\n        pass\ntry:\n    result = calculate()\nexcept:\n    print("Error")\nif done == True:\n    print("finished")',
+    javascript: 'for (let i = 0; i <= arr.length; i++) {\n    console.log(arr[i]);\n}\nvar x = 10;\nif (x == null) {\n    console.log("empty");\n}',
+    java: 'String name1 = "John";\nif (name1 == "John") {\n    System.out.println("match");\n}\ntry {\n    risky();\n} catch (Exception e) {}',
+    cpp: 'int* arr = new int[10];\ndelete arr;\n',
+    html: '<html>\n<head>\n<title>My Page</title>\n</head>\n<body>\n<img src="logo.png">\n<a href="#">Click here</a>\n<a href="https://example.com" target="_blank">External link</a>\n<center>Welcome!</center>\n<button onclick="doThing()">Go</button>\n<div id="box">A</div>\n<div id="box">B</div>\n</body>\n</html>',
+  };
+
+  const FILENAMES = { python:'main.py', javascript:'main.js', java:'Main.java', cpp:'main.cpp', html:'index.html' };
+
+  let currentLang = 'python';
+  const codeInput = document.getElementById('codeInput');
+  const langRow = document.getElementById('langRow');
+  const resultsPanel = document.getElementById('resultsPanel');
+  const learningPanel = document.getElementById('learningPanel');
+  const stepList = document.getElementById('stepList');
+  const resultCountLabel = document.getElementById('resultCountLabel');
+  const filenameLabel = document.getElementById('filenameLabel');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const codeCounter = document.getElementById('codeCounter');
+
+  function setLanguage(lang, opts){
+    opts = opts || {};
+    currentLang = lang;
+    [...langRow.children].forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+    const isEmpty = !codeInput.value.trim();
+    const isExample = Object.values(BUG_EXAMPLES).includes(codeInput.value);
+    if (opts.fill || isEmpty || isExample){
+      codeInput.value = BUG_EXAMPLES[lang] || '';
+    }
+    filenameLabel.textContent = FILENAMES[lang] || 'main';
+    updateCodeCounter();
+  }
+
+  function updateCodeCounter(){
+    const lines = codeInput.value ? codeInput.value.split('\n').length : 0;
+    codeCounter.textContent = `${lines} line${lines === 1 ? '' : 's'}`;
+  }
+  codeInput.addEventListener('input', updateCodeCounter);
+  codeInput.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyzeCode(); });
+
+  function stripPythonNoise(code){
+    return code.replace(
+      /("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|#[^\n]*)/g,
+      s => s.replace(/[^\n]/g, ' ')
+    );
+  }
+
+  function detectBugs(code, lang){
+    const patterns = BUG_PATTERNS[lang] || [];
+    const scanText = lang === 'python' ? stripPythonNoise(code) : code;
+    const bugs = [];
+    for (const p of patterns){
+      const re = new RegExp(p.re.source, p.re.flags);
+      let m;
+      while ((m = re.exec(scanText)) !== null){
+        const lineNumber = scanText.slice(0, m.index).split('\n').length;
+        bugs.push({
+          severity: p.severity, title: p.title, description: p.desc, fix: p.fix,
+          concept: p.concept,
+          match: code.slice(m.index, m.index + m[0].length).trim(),
+          line: lineNumber
+        });
+        if (m[0].length === 0) re.lastIndex++;
+      }
+    }
+    bugs.sort((a,b) => a.line - b.line);
+    return bugs;
+  }
+
+  function detectHtmlBugs(code){
+    const bugs = [];
+    const lineOf = idx => code.slice(0, idx).split('\n').length;
+
+    if (!/<!DOCTYPE\s+html/i.test(code)){
+      bugs.push({ severity:'medium', title:'Missing <!DOCTYPE html>', description:'Without a doctype, browsers can render the page in quirks mode with inconsistent, hard-to-debug behavior.', fix:'Add <!DOCTYPE html> as the very first line of the document.', concept:'HTML Structure', match:'(document start)', line:1 });
+    }
+
+    const htmlTagMatch = /<html\b[^>]*>/i.exec(code);
+    if (htmlTagMatch && !/\blang\s*=/i.test(htmlTagMatch[0])){
+      bugs.push({ severity:'medium', title:'Missing lang attribute', description:'The <html> tag has no lang attribute, which hurts accessibility and screen-reader pronunciation.', fix:'Add lang="en" (or the appropriate language code) to <html>.', concept:'Accessibility', match: htmlTagMatch[0], line: lineOf(htmlTagMatch.index) });
+    }
+
+    if (!/<meta[^>]+charset/i.test(code)){
+      bugs.push({ severity:'medium', title:'Missing charset declaration', description:'No <meta charset="UTF-8"> was found — text encoding may not render correctly for all characters.', fix:'Add <meta charset="UTF-8"> near the top of <head>.', concept:'HTML Structure', match:'(missing in <head>)', line:1 });
+    }
+
+    if (!/<meta[^>]+viewport/i.test(code)){
+      bugs.push({ severity:'low', title:'Missing viewport meta tag', description:'Without a viewport meta tag, the page may not scale correctly on mobile devices.', fix:'Add <meta name="viewport" content="width=device-width, initial-scale=1.0">.', concept:'Responsive Design', match:'(missing in <head>)', line:1 });
+    }
+
+    {
+      const re = /<img\b[^>]*>/gi; let m;
+      while ((m = re.exec(code)) !== null){
+        if (!/\balt\s*=/i.test(m[0])){
+          bugs.push({ severity:'high', title:'Image missing alt text', description:'Screen readers can\u2019t describe this image without an alt attribute.', fix:'Add a descriptive alt attribute, e.g. alt="…" (or alt="" if purely decorative).', concept:'Accessibility', match:m[0].slice(0,72), line:lineOf(m.index) });
+        }
+      }
+    }
+
+    {
+      const re = /<a\b[^>]*>/gi; let m;
+      while ((m = re.exec(code)) !== null){
+        if (/target\s*=\s*["']_blank["']/i.test(m[0]) && !/rel\s*=\s*["'][^"']*noopener/i.test(m[0])){
+          bugs.push({ severity:'medium', title:'target="_blank" without rel="noopener"', description:'Links that open a new tab without rel="noopener" let the new page access window.opener — a security and performance risk.', fix:'Add rel="noopener noreferrer" alongside target="_blank".', concept:'Security', match:m[0].slice(0,72), line:lineOf(m.index) });
+        }
+        if (/href\s*=\s*["']#["']/i.test(m[0])){
+          bugs.push({ severity:'low', title:'Empty link (href="#")', description:'A link with href="#" doesn\u2019t go anywhere and can confuse keyboard and screen-reader users.', fix:'Use a <button> for in-page actions, or point href at a real destination.', concept:'Accessibility', match:m[0].slice(0,72), line:lineOf(m.index) });
+        }
+      }
+    }
+
+    {
+      const re = /\bon(click|load|mouseover|mouseout|change|submit|error|keydown|keyup)\s*=\s*["'][^"']*["']/gi; let m;
+      while ((m = re.exec(code)) !== null){
+        bugs.push({ severity:'low', title:`Inline event handler: on${m[1]}`, description:'Mixing JavaScript into HTML attributes makes code harder to maintain and can bypass stricter content security policies.', fix:'Move the logic into a <script> file and attach it with addEventListener instead.', concept:'Best Practices', match:m[0].slice(0,72), line:lineOf(m.index) });
+      }
+    }
+
+    {
+      const re = /<(font|center|marquee|blink|big|strike|tt)\b[^>]*>/gi; let m;
+      while ((m = re.exec(code)) !== null){
+        bugs.push({ severity:'low', title:`Deprecated tag: <${m[1].toLowerCase()}>`, description:'This tag is obsolete in modern HTML5 and may not render consistently across browsers.', fix:'Replace it with CSS (e.g. font-family, text-align, or an animation) instead.', concept:'Semantic HTML', match:m[0].slice(0,72), line:lineOf(m.index) });
+      }
+    }
+
+    {
+      const re = /<script\b[^>]*\bsrc\s*=\s*["'][^"']+["'][^>]*>/gi; let m;
+      while ((m = re.exec(code)) !== null){
+        if (!/\b(defer|async)\b/i.test(m[0])){
+          bugs.push({ severity:'low', title:'Script tag without defer/async', description:'External scripts loaded without defer or async block HTML parsing while they download.', fix:'Add the defer attribute (or async if execution order doesn\u2019t matter).', concept:'Performance', match:m[0].slice(0,72), line:lineOf(m.index) });
+        }
+      }
+    }
+
+    {
+      const re = /<(img|br|hr|input|meta|link)\b[^>]*>\s*<\/\1>/gi; let m;
+      while ((m = re.exec(code)) !== null){
+        bugs.push({ severity:'low', title:`Unnecessary closing tag for <${m[1]}>`, description:`<${m[1]}> is a void element and shouldn\u2019t have a separate closing tag.`, fix:`Remove the </${m[1]}> — a single self-closing tag is enough.`, concept:'HTML Structure', match:m[0].slice(0,72), line:lineOf(m.index) });
+      }
+    }
+
+    {
+      const re = /\bid\s*=\s*["']([^"']+)["']/gi; let m;
+      const seenIds = {};
+      while ((m = re.exec(code)) !== null){
+        (seenIds[m[1]] = seenIds[m[1]] || []).push(m.index);
+      }
+      Object.entries(seenIds).forEach(([id, positions]) => {
+        if (positions.length > 1){
+          positions.slice(1).forEach(pos => {
+            bugs.push({ severity:'medium', title:`Duplicate id: "${id}"`, description:'HTML ids must be unique — duplicates cause inconsistent CSS targeting and document.getElementById() only ever returns the first match.', fix:`Give each element its own unique id (only one id="${id}" per page).`, concept:'HTML Structure', match:`id="${id}"`, line:lineOf(pos) });
+          });
+        }
+      });
+    }
+
+    bugs.sort((a,b) => a.line - b.line);
+    return bugs;
+  }
+
+  function detectAllIssues(code, lang){
+    let syntax = [], style = [];
+    try { syntax = detectSyntaxErrors(code, lang); } catch (e) { console.warn('Syntax check failed:', e); }
+    try { style = lang === 'html' ? detectHtmlBugs(code) : detectBugs(code, lang); } catch (e) { console.warn('Pattern check failed:', e); }
+
+    const sevRank = { high: 0, medium: 1, low: 2 };
+    const seen = new Set();
+    return [...syntax, ...style]
+      .filter(b => {
+        const key = b.title + '|' + b.line + '|' + b.match;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => a.line - b.line || sevRank[a.severity] - sevRank[b.severity]);
+  }
+
+  function buildBugLearningPath(bugs){
+    const concepts = [...new Set(bugs.map(b => b.concept))];
+    const steps = [];
+    for (const c of concepts){
+      const s = BUG_LEARNING_PATHS[c] || ['Study the fundamentals of ' + c];
+      for (const step of s) if (!steps.includes(step)) steps.push(step);
+    }
+    return steps.slice(0, 8);
+  }
+
+  function renderBugsEmpty(){
+    resultsPanel.innerHTML = `<div class="empty-state"><span class="icon">↗</span><p>Run a scan to see results here.</p></div>`;
+    learningPanel.style.display = 'none';
+    resultCountLabel.textContent = '';
+  }
+
+  let lastBugReport = '';
+
+  function renderBugResults(bugs){
+    if (bugs.length === 0){
+      resultsPanel.innerHTML = `<div class="clean-state"><div class="badge">✓ ${pick(CLEAN_PHRASES_CODE)}</div><p>Nothing matched our known bug patterns. Nice work.</p></div>`;
+      learningPanel.style.display = 'none';
+      resultCountLabel.textContent = '0 issues';
+      fireConfetti(resultsPanel);
+      return;
+    }
+    const high = bugs.filter(b => b.severity === 'high').length;
+    const med = bugs.filter(b => b.severity === 'medium').length;
+    const low = bugs.filter(b => b.severity === 'low').length;
+    resultCountLabel.textContent = `${bugs.length} issue${bugs.length === 1 ? '' : 's'}`;
+
+    let html = `<div class="summary-row">
+        <div class="summary-chip high"><span class="num">${high}</span><span class="lbl">High</span></div>
+        <div class="summary-chip medium"><span class="num">${med}</span><span class="lbl">Medium</span></div>
+        <div class="summary-chip low"><span class="num">${low}</span><span class="lbl">Low</span></div>
+      </div><div class="issue-list">`;
+    let reportText = `Debug chamber report (${bugs.length} issue${bugs.length===1?'':'s'})\n\n`;
+    for (const bug of bugs){
+      html += `<div class="issue ${bug.severity}">
+          <div class="issue-head"><div class="issue-title">${escapeHtml(bug.title)}</div><div class="badge-sev ${bug.severity}">${bug.severity}</div></div>
+          <div class="issue-desc">${escapeHtml(bug.description)}</div>
+          <div class="issue-code"><span class="lineno">Line ${bug.line}</span><span class="code">${escapeHtml(bug.match.slice(0,72))}</span></div>
+          <div class="issue-fix"><b>Fix:</b> ${escapeHtml(bug.fix)}</div>
+        </div>`;
+      reportText += `[${bug.severity.toUpperCase()}] Line ${bug.line} — ${bug.title}\n  ${bug.description}\n  Fix: ${bug.fix}\n\n`;
+    }
+    html += `</div>
+      <div class="result-actions"><button class="btn icon-btn" id="copyBugsBtn">📋 Copy report</button></div>`;
+    resultsPanel.innerHTML = html;
+    lastBugReport = reportText;
+    document.getElementById('copyBugsBtn').addEventListener('click', () => copyToClipboard(lastBugReport, 'Bug report'));
+
+    const path = buildBugLearningPath(bugs);
+    stepList.innerHTML = path.map((step, i) => `<div class="step-item checkable" data-step="${i}"><div class="step-num">${i+1}</div><div class="step-text">${escapeHtml(step)}</div></div>`).join('');
+    stepList.querySelectorAll('.step-item').forEach(el => {
+      el.addEventListener('click', () => {
+        el.classList.toggle('done');
+        const items = [...stepList.querySelectorAll('.step-item')];
+        if (items.length && items.every(it => it.classList.contains('done'))){
+          fireConfetti(stepList);
+          showToast("All done — you're on top of it!", '🎉');
+        }
+      });
+    });
+    learningPanel.style.display = '';
+  }
+
+  function analyzeCode(){
+    const code = codeInput.value;
+    if (!code.trim()){ renderBugsEmpty(); return; }
+    analyzeBtn.disabled = true;
+    resultsPanel.innerHTML = `<div class="empty-state"><span class="icon">🔍</span><p id="bugLoadingText"></p></div>`;
+    const stopRotation = rotateLoadingText(document.getElementById('bugLoadingText'), LOADING_PHRASES_CODE, 350);
+    setTimeout(() => {
+      stopRotation();
+      const bugs = detectAllIssues(code, currentLang);
+      renderBugResults(bugs);
+      analyzeBtn.disabled = false;
+      bumpStat('bugs');
+      navCountBugs.style.display = '';
+      navCountBugs.textContent = stats.bugs;
+      pushHistory('bugs', code);
+      showToast(bugs.length === 0 ? pick(CLEAN_PHRASES_CODE) : `${pick(FOUND_PHRASES)} — ${bugs.length} issue${bugs.length===1?'':'s'}`, bugs.length === 0 ? '🎉' : '🐞');
+    }, 500);
+  }
+
+  langRow.addEventListener('click', e => {
+    const btn = e.target.closest('.lang-pill');
+    if (!btn) return;
+    setLanguage(btn.dataset.lang);
+    renderBugsEmpty();
+  });
+  analyzeBtn.addEventListener('click', analyzeCode);
+  document.getElementById('clearBtn').addEventListener('click', () => { codeInput.value = ''; updateCodeCounter(); renderBugsEmpty(); });
+  setLanguage('python', { fill: true });
+
+  // =================================================================
+  // LOGIC SOLVER
+  // =================================================================
+  const mathInput = document.getElementById('mathInput');
+  const mathResultsPanel = document.getElementById('mathResultsPanel');
+  const solveBtn = document.getElementById('solveBtn');
+
+  function evaluateExpression(exprStr){
+    let i = 0;
+    const s = exprStr.replace(/\s+/g, '');
+    const steps = [];
+    function peek(){ return s[i]; }
+    function error(msg){ throw new Error(msg); }
+
+    // Record each binary operation as a step
+    function record(label, left, op, right, result){
+      steps.push({
+        label: label,
+        value: `${fmtNum(left)} ${op} ${fmtNum(right)} = ${fmtNum(result)}`
+      });
+    }
+
+    function parseExpr(){
+      let val = parseTerm();
+      while (peek() === '+' || peek() === '-'){
+        const op = s[i++];
+        const left = val;
+        const rhs = parseTerm();
+        val = op === '+' ? left + rhs : left - rhs;
+        record('Add / subtract', left, op, rhs, val);
+      }
+      return val;
+    }
+    function parseTerm(){
+      let val = parseFactor();
+      while (peek() === '*' || peek() === '/'){
+        const op = s[i++];
+        const left = val;
+        const rhs = parseFactor();
+        if (op === '/'){ if (rhs === 0) error('Division by zero'); val = left / rhs; }
+        else { val = left * rhs; }
+        record(op === '*' ? 'Multiply' : 'Divide', left, op, rhs, val);
+      }
+      return val;
+    }
+    function parseFactor(){
+      if (peek() === '-'){ i++; const v = -parseFactor(); return v; }
+      if (peek() === '+'){ i++; return parseFactor(); }
+      let val = parseBase();
+      if (peek() === '^'){
+        i++;
+        const base = val;
+        const exp = parseFactor();
+        val = Math.pow(base, exp);
+        steps.push({ label: 'Exponent', value: `${fmtNum(base)} ^ ${fmtNum(exp)} = ${fmtNum(val)}` });
+      }
+      return val;
+    }
+    function parseBase(){
+      if (peek() === '('){
+        i++;
+        const startIdx = i;
+        const val = parseExpr();
+        if (peek() !== ')') error('Missing closing parenthesis');
+        i++;
+        const inner = s.slice(startIdx, i - 1);
+        steps.push({ label: 'Parentheses', value: `(${inner}) = ${fmtNum(val)}` });
+        return val;
+      }
+      const funcMatch = /^(sqrt|abs|sin|cos|tan|log)/.exec(s.slice(i));
+      if (funcMatch){
+        const fname = funcMatch[1]; i += fname.length;
+        if (peek() !== '(') error('Expected ( after ' + fname);
+        i++;
+        const arg = parseExpr();
+        if (peek() !== ')') error('Missing closing parenthesis');
+        i++;
+        const fns = { sqrt: Math.sqrt, abs: Math.abs, sin: Math.sin, cos: Math.cos, tan: Math.tan, log: Math.log10 };
+        const val = fns[fname](arg);
+        steps.push({ label: `Function ${fname}`, value: `${fname}(${fmtNum(arg)}) = ${fmtNum(val)}` });
+        return val;
+      }
+      const numMatch = /^\d+(\.\d+)?/.exec(s.slice(i));
+      if (numMatch){ i += numMatch[0].length; return parseFloat(numMatch[0]); }
+      error('Unexpected character: ' + (peek() || 'end of input'));
+    }
+
+    const result = parseExpr();
+    if (i < s.length) error('Unexpected trailing input: ' + s.slice(i));
+    return { value: result, steps };
+  }
+
+  function parsePolynomialSide(sideStr){
+    let s = sideStr.replace(/\s+/g, '');
+    if (s === '') return null;
+    if (s[0] !== '+' && s[0] !== '-') s = '+' + s;
+    const terms = s.match(/[+-][^+-]+/g);
+    if (!terms) return null;
+    const coeffs = {0:0, 1:0, 2:0};
+    for (const term of terms){
+      const sign = term[0] === '-' ? -1 : 1;
+      const rest = term.slice(1);
+      const m = /^(\d*\.?\d*)(x(\^(\d+))?)?(\/(\d+\.?\d*))?$/i.exec(rest);
+      if (!m || rest === '') return null;
+      const coeffStr = m[1];
+      const hasX = !!m[2];
+      const power = hasX ? (m[4] ? parseInt(m[4],10) : 1) : 0;
+      if (power > 2) return null;
+      let coeff = coeffStr === '' ? (hasX ? 1 : NaN) : parseFloat(coeffStr);
+      if (isNaN(coeff)) return null;
+      if (m[6]) coeff = coeff / parseFloat(m[6]);
+      coeff *= sign;
+      coeffs[power] = (coeffs[power] || 0) + coeff;
+    }
+    return coeffs;
+  }
+
+  function solveEquation(eqStr){
+    const parts = eqStr.split('=');
+    if (parts.length !== 2) throw new Error('An equation needs exactly one "=" sign.');
+    const left = parsePolynomialSide(parts[0]);
+    const right = parsePolynomialSide(parts[1]);
+    if (!left || !right) throw new Error('Could not parse that equation. Supported terms: numbers, x, x^2, +, -, / by a number.');
+    const a = (left[2]||0) - (right[2]||0);
+    const b = (left[1]||0) - (right[1]||0);
+    const c = (left[0]||0) - (right[0]||0);
+    const steps = [];
+    steps.push({ label: 'Standard form', value: `${fmtCoeff(a,'x^2')}${fmtCoeff(b,'x',true)}${fmtConst(c,true)} = 0`.trim().replace(/^\+\s*/, '') });
+    if (Math.abs(a) < 1e-12){
+      if (Math.abs(b) < 1e-12){
+        if (Math.abs(c) < 1e-12) return { steps, answer: 'Infinitely many solutions', detail: 'Every value of x satisfies this equation.' };
+        return { steps, answer: 'No solution', detail: 'This equation reduces to a false statement (e.g. 0 = 5).' };
+      }
+      const x = -c / b;
+      steps.push({ label: 'Isolate x', value: `x = ${fmtNum(-c)} / ${fmtNum(b)}` });
+      return { steps, answer: `x = ${fmtNum(x)}`, detail: 'Linear equation — one solution.' };
+    }
+    const disc = b*b - 4*a*c;
+    steps.push({ label: 'Discriminant', value: `b² − 4ac = ${fmtNum(b)}² − 4(${fmtNum(a)})(${fmtNum(c)}) = ${fmtNum(disc)}` });
+    if (disc < 0){
+      const re = (-b/(2*a)); const im = Math.sqrt(-disc)/(2*a);
+      return { steps, answer: `x = ${fmtNum(re)} ± ${fmtNum(Math.abs(im))}i`, detail: 'Negative discriminant — two complex solutions.' };
+    }
+    const sq = Math.sqrt(disc);
+    const x1 = (-b + sq) / (2*a); const x2 = (-b - sq) / (2*a);
+    steps.push({ label: 'Quadratic formula', value: `x = (−b ± √disc) / (2a)` });
+    if (Math.abs(x1 - x2) < 1e-9) return { steps, answer: `x = ${fmtNum(x1)}`, detail: 'One repeated real solution (discriminant = 0).' };
+    return { steps, answer: `x = ${fmtNum(x1)}  or  x = ${fmtNum(x2)}`, detail: 'Two real solutions.' };
+  }
+
+  function fmtNum(n){ const r = Math.round(n * 1e6) / 1e6; return String(r); }
+  function fmtCoeff(v, sym, withSign){
+    if (Math.abs(v) < 1e-12) return '';
+    const sign = v < 0 ? '- ' : (withSign ? '+ ' : '');
+    const abs = Math.abs(v);
+    const coeffPart = abs === 1 ? '' : fmtNum(abs);
+    return ` ${sign}${coeffPart}${sym}`;
+  }
+  function fmtConst(v, withSign){
+    if (Math.abs(v) < 1e-12) return '';
+    const sign = v < 0 ? '- ' : (withSign ? '+ ' : '');
+    return ` ${sign}${fmtNum(Math.abs(v))}`;
+  }
+
+  function looksLikeEquation(str){
+    const cleaned = str.replace(/==|!=|<=|>=/g, '');
+    return cleaned.includes('=');
+  }
+
+  function renderMathEmpty(){
+    mathResultsPanel.innerHTML = `<div class="empty-state"><span class="icon">Σ</span><p>Enter a problem and press Solve.</p></div>`;
+  }
+  function renderMathError(msg){
+    mathResultsPanel.innerHTML = `<div class="issue high"><div class="issue-head"><div class="issue-title">Couldn't solve that</div><div class="badge-sev high">error</div></div><div class="issue-desc">${escapeHtml(msg)}</div></div>`;
+  }
+  function renderMathArithmetic(exprStr, result){
+    const stepsHtml = result.steps.length
+      ? `<div class="math-steps">` + result.steps.map(st =>
+          `<div class="math-step-row"><span class="math-step-label">${escapeHtml(st.label)}</span><span>${escapeHtml(st.value)}</span></div>`
+        ).join('') + `</div>`
+      : '';
+    mathResultsPanel.innerHTML = `
+      <div class="math-result">
+        <div class="expr">${escapeHtml(exprStr)}</div>
+        <div class="answer">= ${escapeHtml(fmtNum(result.value))}</div>
+        ${stepsHtml}
+        <div class="result-actions" style="justify-content:center;"><button class="btn icon-btn" id="copyMathBtn">📋 Copy answer</button></div>
+      </div>`;
+    document.getElementById('copyMathBtn').addEventListener('click', () => {
+      let report = `${exprStr} = ${fmtNum(result.value)}\n\nSteps:\n`;
+      result.steps.forEach(st => { report += `• ${st.label}: ${st.value}\n`; });
+      copyToClipboard(report, 'Answer');
+    });
+  }
+  function renderMathEquation(eqStr, result){
+    let stepsHtml = result.steps.map(s => `<div class="math-step-row"><span class="math-step-label">${escapeHtml(s.label)}</span><span>${escapeHtml(s.value)}</span></div>`).join('');
+    mathResultsPanel.innerHTML = `
+      <div class="math-result">
+        <div class="expr">${escapeHtml(eqStr)}</div>
+        <div class="answer">${escapeHtml(result.answer)}</div>
+        <div style="color:var(--text-muted); font-size:0.85rem;">${escapeHtml(result.detail)}</div>
+        <div class="math-steps">${stepsHtml}</div>
+        <div class="result-actions" style="justify-content:center;"><button class="btn icon-btn" id="copyMathBtn">📋 Copy answer</button></div>
+      </div>`;
+    document.getElementById('copyMathBtn').addEventListener('click', () => copyToClipboard(`${eqStr}  →  ${result.answer}`, 'Answer'));
+  }
+
+  function solveMath(){
+    const raw = mathInput.value.trim();
+    if (!raw){ renderMathEmpty(); return; }
+    try{
+      if (looksLikeEquation(raw)){
+        const result = solveEquation(raw);
+        renderMathEquation(raw, result);
+      } else {
+        const result = evaluateExpression(raw);   // now returns { value, steps }
+        renderMathArithmetic(raw, result);
+      }
+      bumpStat('math');
+      pushHistory('math', raw);
+      showToast('Solved', 'Σ');
+    } catch(err){
+      renderMathError(err.message || 'Please check your syntax and try again.');
+      showToast('Could not solve that expression', '⚠️');
+    }
+  }
+
+  solveBtn.addEventListener('click', solveMath);
+  mathInput.addEventListener('keydown', e => { if (e.key === 'Enter' || ((e.ctrlKey || e.metaKey) && e.key === 'Enter')) solveMath(); });
+  document.getElementById('mathClearBtn').addEventListener('click', () => { mathInput.value=''; renderMathEmpty(); });
+  document.getElementById('mathExamples').addEventListener('click', e => {
+    const btn = e.target.closest('.example-btn');
+    if (!btn) return;
+    mathInput.value = btn.dataset.eq;
+    solveMath();
+  });
+
+  // =================================================================
+  // GRAMMAR GUARD
+  // =================================================================
+  const textInput = document.getElementById('textInput');
+  const grammarResultsPanel = document.getElementById('grammarResultsPanel');
+  const grammarCountLabel = document.getElementById('grammarCountLabel');
+  const grammarPreviewPanel = document.getElementById('grammarPreviewPanel');
+  const grammarLearningPanel = document.getElementById('grammarLearningPanel');
+  const grammarStepList = document.getElementById('grammarStepList');
+  const highlightedText = document.getElementById('highlightedText');
+  const checkBtn = document.getElementById('checkBtn');
+  const textCounter = document.getElementById('textCounter');
+
+  function updateTextCounter(){
+    const words = (textInput.value.match(/\b\w+\b/g) || []).length;
+    textCounter.textContent = `${words} word${words === 1 ? '' : 's'}`;
+  }
+  textInput.addEventListener('input', updateTextCounter);
+  textInput.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') checkGrammar(); });
+
+  // ---------- ENGINE ----------
+  // Rules run on a copy of the text where curly quotes are straightened (same length,
+  // so match positions line up with the original text).
+  // Rule fields: re, sev, concept, title, desc, tip, replace (optional), pre (first capture
+  // group is untouched context before the target), when (optional extra check).
+
+  function matchCase(orig, repl){
+    if (orig.length > 1 && orig === orig.toUpperCase() && /[A-Z]/.test(orig)) return repl.toUpperCase();
+    if (/^[A-Z]/.test(orig)) return repl.charAt(0).toUpperCase() + repl.slice(1);
+    return repl;
+  }
+
+  const SPELLING = {
+    recieve:'receive', recieved:'received', definately:'definitely', definatly:'definitely', seperate:'separate',
+    seperately:'separately', occured:'occurred', occuring:'occurring', ocurred:'occurred', untill:'until', wich:'which',
+    alot:'a lot', becuase:'because', beleive:'believe', wierd:'weird', accomodate:'accommodate', acheive:'achieve',
+    goverment:'government', enviroment:'environment', tommorow:'tomorrow', tomorow:'tomorrow', neccessary:'necessary',
+    necesary:'necessary', occassion:'occasion', publically:'publicly', truely:'truly', greatful:'grateful',
+    independant:'independent', begining:'beginning', existance:'existence', foriegn:'foreign', freind:'friend',
+    freinds:'friends', adress:'address', calender:'calendar', arguement:'argument', comming:'coming', writting:'writing',
+    sucess:'success', sucessful:'successful', succesful:'successful', tounge:'tongue', oppurtunity:'opportunity',
+    teh:'the', adn:'and', thier:'their', realy:'really', embarass:'embarrass', harrass:'harass', wether:'whether',
+    interupt:'interrupt', prefered:'preferred', refered:'referred', transfered:'transferred', buisness:'business',
+    mispell:'misspell', noticable:'noticeable', priviledge:'privilege', recomend:'recommend', reccomend:'recommend',
+    suprise:'surprise', usualy:'usually', finaly:'finally', basicly:'basically', accross:'across', agressive:'aggressive',
+    apparant:'apparent', concious:'conscious', equiptment:'equipment', familar:'familiar', garantee:'guarantee',
+    happend:'happened', immediatly:'immediately', knowlege:'knowledge', maintainance:'maintenance', neice:'niece',
+    peice:'piece', posession:'possession', relevent:'relevant', responsability:'responsibility', rythm:'rhythm',
+    tendancy:'tendency', unfortunatly:'unfortunately'
+  };
+  const SPELL_RE = new RegExp('\\b(' + Object.keys(SPELLING).join('|') + ')\\b', 'gi');
+
+  const CONTRACTIONS = {
+    dont:"don't", doesnt:"doesn't", didnt:"didn't", isnt:"isn't", arent:"aren't", wasnt:"wasn't", werent:"weren't",
+    couldnt:"couldn't", shouldnt:"shouldn't", wouldnt:"wouldn't", havent:"haven't", hasnt:"hasn't", hadnt:"hadn't",
+    cant:"can't", wont:"won't", ive:"I've", theyre:"they're", youre:"you're", thats:"that's", whats:"what's",
+    whos:"who's", im:"I'm"
+  };
+  const CONTR_RE = new RegExp('\\b(' + Object.keys(CONTRACTIONS).join('|') + ')\\b', 'gi');
+
+  const WORDY = {
+    'in order to':'to', 'due to the fact that':'because', 'at this point in time':'now', 'at the present time':'now',
+    'in the event that':'if', 'for the purpose of':'for', 'has the ability to':'can', 'a large number of':'many',
+    'the majority of':'most', 'in spite of the fact that':'although', 'with regard to':'about', 'each and every':'every',
+    'end result':'result', 'past history':'history', 'very unique':'unique', 'irregardless':'regardless',
+    'completely eliminate':'eliminate', 'absolutely essential':'essential', 'close proximity':'proximity',
+    'general consensus':'consensus', 'advance planning':'planning', 'revert back':'revert', 'repeat again':'repeat',
+    'return back':'return', 'final outcome':'outcome', 'free gift':'gift'
+  };
+  const WORDY_RE = new RegExp('\\b(' + Object.keys(WORDY).sort((a, b) => b.length - a.length)
+    .map(k => k.replace(/ /g, '\\s+')).join('|') + ')\\b', 'gi');
+
+  const IRREGULAR = 'written|taken|given|made|seen|known|shown|broken|chosen|stolen|driven|eaten|forgotten|hidden|spoken|begun|built|caught|found|held|kept|lost|paid|sent|sold|taught|told|won|brought|bought|thought|grown|thrown|worn|torn|drawn';
+  const PASSIVE_RE = new RegExp('\\b(?:is|are|was|were|be|been|being|am)\\s+(?:\\w+ly\\s+)?((?:\\w{3,}ed)|(?:' + IRREGULAR + '))\\b', 'gi');
+  const NOT_PASSIVE = /^(tired|excited|interested|bored|worried|surprised|pleased|scared|confused|married|concerned|supposed|related|located|delighted|shocked|amazed|annoyed|exhausted|embarrassed|disappointed|satisfied|determined|qualified|limited|advanced|experienced|detailed|talented|crowded|alarmed|puzzled|terrified|frightened|obsessed|dedicated|committed|indeed|hundred|speed|breed|proceed|succeed|exceed)$/i;
+
+  const ABBREV = new Set(['e.g','i.e','etc','vs','dr','mr','mrs','ms','prof','inc','approx','cf','no','fig','st','jr','sr']);
+  const AUX_BEFORE = /\b(does|did|do|will|would|can|could|should|shall|may|might|must|to|let|make|makes|made|help|helps|see|saw|hear|heard|watch|watched)\s+$/i;
+
+  const AN_SPECIAL = /^(hour|honest|honou?r|heir)/i;
+  const A_SPECIAL = /^(unique|union|unit|unite|united|unity|universe|universal|university|uniform|unicorn|unify|unified|unilateral|unicycle|us[eu]|uti|eu|ubi|ufo|one\b|once\b)/i;
+  function needsAn(word){
+    if (AN_SPECIAL.test(word)) return true;
+    if (A_SPECIAL.test(word)) return false;
+    return /^[aeiou]/i.test(word);
+  }
+
+  const SUBJ_NAMES = '(?:book|car|house|phone|computer|idea|name|mother|father|friend|parents|team|family|dog|cat|home|work|own|money)';
+
+  const RULES = [
+    // ----- Confusable words -----
+    { re:/\b(their)\s+(is|are|was|were)\b/gi, sev:'high', concept:'Confusable Words',
+      title:'Possible "there"/"their" error', desc:'"Their" shows possession; "there" introduces or locates something.',
+      tip:'Use "there" here.', replace:m => `there ${m[2]}` },
+    { re:new RegExp("\\bthey're\\s+(" + SUBJ_NAMES + ")\\b", 'gi'), sev:'high', concept:'Confusable Words',
+      title:'Possible "they\'re"/"their" error', desc:'"They\'re" means "they are"; "their" shows possession.',
+      tip:'Use "their" for possession.', replace:m => `their ${m[1]}` },
+    { re:/\byour\s+(going|doing|being|coming|welcome|not|right|wrong|late|ready|so|too|very|a|an|the|always|never)\b/gi, sev:'high', concept:'Confusable Words',
+      title:'Possible "your"/"you\'re" error', desc:'"Your" shows possession; "you\'re" means "you are".',
+      tip:'Use "you\'re" here.', replace:m => `you're ${m[1]}` },
+    { re:/\byour\s+(is|are|was|were)\b/gi, sev:'high', concept:'Confusable Words',
+      title:'Possible "your"/"you\'re" error', desc:'"Your" shows possession; "you\'re" means "you are".',
+      tip:'If you mean "you are", write "you\'re".' },
+    { re:new RegExp("\\byou're\\s+(" + SUBJ_NAMES + ")\\b", 'gi'), sev:'high', concept:'Confusable Words',
+      title:'Possible "you\'re"/"your" error', desc:'"You\'re" means "you are"; "your" shows possession.',
+      tip:'Use "your" for possession.', replace:m => `your ${m[1]}` },
+    { re:/\bits\s+(is|was|has|will|to|too|not|a|an|very|so|just|been|going|about|already)\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "its"/"it\'s" error', desc:'"It\'s" means "it is" or "it has"; "its" is possessive.',
+      tip:'Use "it\'s" here.', replace:m => `it's ${m[1]}` },
+    { re:/\bit's\s+(own|color|colour|name|size|shape|owner|tail|head|value|purpose|meaning|fault)\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "it\'s"/"its" error', desc:'"Its" (no apostrophe) is the possessive form.',
+      tip:'Use "its" for possession.', replace:m => `its ${m[1]}` },
+    { re:/\b(more|less|greater|better|worse|bigger|smaller|rather|other|faster|slower|older|younger|higher|lower)\s+then\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "then"/"than" error', desc:'Use "than" for comparisons and "then" for sequence in time.',
+      tip:'Use "than" when comparing.', replace:m => `${m[1]} than` },
+    { re:/\b(should|would|could|must|might)\s+of\b/gi, sev:'high', concept:'Confusable Words',
+      title:'"of" instead of "have"', desc:'The correct phrase is "should have", "would have", "could have" — never "of".',
+      tip:'Replace "of" with "have".', replace:m => `${m[1]} have` },
+    { re:/\b(should|would|could|must)n'?t\s+of\b/gi, sev:'high', concept:'Confusable Words',
+      title:'"of" instead of "have"', desc:'The correct phrase is "shouldn\'t have", "couldn\'t have", and so on.',
+      tip:'Replace "of" with "have".', replace:m => `${m[1]}n't have` },
+    { re:/\bto\s+(much|many|late|soon)\b/gi, sev:'low', concept:'Confusable Words',
+      title:'Possible "to"/"too" error', desc:'"Too" means "excessively" or "also"; "to" is a preposition.',
+      tip:'Use "too" before this word.', replace:m => `too ${m[1]}` },
+    { re:/\bloosing\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "loosing"/"losing" error', desc:'"Losing" (one o) means failing to keep something.',
+      tip:'Use "losing".', replace:() => 'losing' },
+    { re:/\b(to|will|might|could|would|don't|didn't|can't|won't)\s+loose\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "loose"/"lose" error', desc:'"Loose" means not tight; "lose" means to no longer have something.',
+      tip:'Use "lose" here.', replace:m => `${m[1]} lose` },
+    { re:/\bwho's\s+(book|car|house|phone|idea|name|turn|fault|side|dog|cat|bag)\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "who\'s"/"whose" error', desc:'"Who\'s" means "who is"; "whose" shows possession.',
+      tip:'Use "whose" for possession.', replace:m => `whose ${m[1]}` },
+    { re:/\bbetween\s+you\s+and\s+I\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'"between you and I"', desc:'After a preposition like "between", use the object form "me".',
+      tip:'Write "between you and me".', replace:() => 'between you and me' },
+    { re:/\baffects?\s+on\b/gi, sev:'low', concept:'Confusable Words',
+      title:'Possible "affect"/"effect" error', desc:'"Affect" is usually a verb; "effect" is usually a noun ("an effect on").',
+      tip:'Use "effect on" (noun), or drop "on" with the verb "affect".' },
+    { re:/\bsuppose\s+to\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'"suppose to"', desc:'The expression is "supposed to".', tip:'Use "supposed to".', replace:() => 'supposed to' },
+
+    // ----- Spelling & contractions -----
+    { re:SPELL_RE, sev:'high', concept:'Spelling',
+      title:m => `Possible misspelling: "${m[0]}"`, desc:'This word looks misspelled.',
+      tip:m => `Did you mean "${SPELLING[m[0].toLowerCase()]}"?`, replace:m => SPELLING[m[0].toLowerCase()] },
+    { re:CONTR_RE, sev:'medium', concept:'Contractions & Apostrophes',
+      title:m => `Missing apostrophe: "${m[0]}"`, desc:'Contractions need an apostrophe where letters are left out.',
+      tip:m => `Write "${CONTRACTIONS[m[0].toLowerCase()]}".`, replace:m => CONTRACTIONS[m[0].toLowerCase()],
+      when:m => m[0] !== 'IM' },
+
+    // ----- Subject-verb agreement -----
+    { re:/\b(he|she|it)\s+(don't|are)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'Singular subjects (he, she, it) take "doesn\'t" and "is".',
+      tip:'Use the singular verb form.', replace:m => `${m[1]} ${m[2].toLowerCase() === "don't" ? "doesn't" : 'is'}` },
+    { re:/\b(he|she|it)\s+(have|do)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'Singular subjects (he, she, it) take "has" and "does".',
+      tip:'Use the singular verb form.', replace:m => `${m[1]} ${m[2].toLowerCase() === 'have' ? 'has' : 'does'}`,
+      when:(m, t, s) => !AUX_BEFORE.test(t.slice(0, s)) },
+    { re:/\b(they|we|you)\s+(is|was|has|doesn't)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'"They", "we" and "you" take "are", "were", "have" and "don\'t".',
+      tip:'Use the plural verb form.',
+      replace:m => `${m[1]} ${({ is:'are', was:'were', has:'have', "doesn't":"don't" })[m[2].toLowerCase()]}` },
+    { re:/\b(I)\s+(is|are|has|does|doesn't)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'"I" takes "am", "have", "do" and "don\'t".',
+      tip:'Use the correct form for "I".',
+      replace:m => `${m[1]} ${({ is:'am', are:'am', has:'have', does:'do', "doesn't":"don't" })[m[2].toLowerCase()]}` },
+    { re:/\b(people|children|men|women|police)\s+(is|was|has)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'These are plural nouns and take plural verbs.',
+      tip:'Use the plural verb form.',
+      replace:m => `${m[1]} ${({ is:'are', was:'were', has:'have' })[m[2].toLowerCase()]}` },
+
+    // ----- a / an -----
+    { re:/\b(an?)(?=\s+([A-Za-z]+))/gi, sev:'medium', concept:'Articles (a / an)',
+      title:'"a" vs "an"', desc:'Use "an" before a vowel sound and "a" before a consonant sound.',
+      tip:m => needsAn(m[2]) ? 'Use "an" before this word.' : 'Use "a" before this word.',
+      replace:m => needsAn(m[2]) ? 'an' : 'a',
+      when:(m, t, s) => {
+        const art = m[1], word = m[2];
+        if (word.length === 1 || /^[A-Z]{2,}$/.test(word)) return false;
+        if (/^[A-Z]/.test(art) && s > 0 && !/[.!?]["')\]]*\s*$/.test(t.slice(0, s))) return false;
+        return (art.toLowerCase() === 'an') !== needsAn(word);
+      } },
+
+    // ----- Double negatives -----
+    { re:/\b(don't|doesn't|didn't|can't|couldn't|won't|wouldn't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|shouldn't)\s+(?:\w+\s+)?(no\s+(?!to\b|more\b|longer\b)\w+|nothing|nobody|nowhere|none|hardly|never)\b/gi,
+      sev:'medium', concept:'Double Negatives', title:'Double negative',
+      desc:'Two negatives in one clause cancel each other out or sound confusing.',
+      tip:'Use one negative: "don\'t have any", "can hardly", "saw nothing".' },
+
+    // ----- Spacing & punctuation -----
+    { re:/[ \t]+[,.;:!?]/g, sev:'medium', concept:'Spacing', title:'Space before punctuation',
+      desc:'Punctuation should attach directly to the word before it.',
+      tip:'Remove the space before the punctuation mark.', replace:m => m[0].slice(-1),
+      when:(m, t, s) => !(m[0].trim() === ':' && /[)(DPp\/]/.test(t[s + m[0].length] || '')) },
+    { re:/([a-z])([.!?])(?=[A-Z][a-z])/g, pre:true, sev:'medium', concept:'Punctuation', title:'Missing space after sentence end',
+      desc:'A space is needed between one sentence and the next.', tip:'Add a space after the punctuation mark.',
+      replace:m => m[2] + ' ' },
+    { re:/([a-z])([,;])(?=[A-Za-z])/g, pre:true, sev:'medium', concept:'Punctuation', title:'Missing space after comma',
+      desc:'Commas and semicolons should be followed by a space.', tip:'Add a space after the comma.',
+      replace:m => m[2] + ' ' },
+    { re:/([!?,])\1+/g, sev:'low', concept:'Punctuation', title:'Repeated punctuation',
+      desc:'Repeated punctuation marks look unpolished in formal writing.', tip:'Use a single mark.',
+      replace:m => m[1] },
+    { re:/(\S)( {2,})(?=\S)/g, pre:true, sev:'low', concept:'Spacing', title:'Extra spaces',
+      desc:'There is more than one space between these words.', tip:'Use a single space.', replace:() => ' ' },
+    { re:/[A-Za-z0-9](?=\s*$)/g, sev:'low', concept:'Punctuation', title:'Missing end punctuation',
+      desc:'The text does not end with a period, question mark or exclamation mark.',
+      tip:'Finish the last sentence with punctuation.', replace:m => m[0] + '.',
+      when:(m, t, s, wc) => wc >= 4 },
+
+    // ----- Capitalization -----
+    { re:/(^|[^\w.'(-])i(?![\w.)-])/g, pre:true, sev:'medium', concept:'Capitalization', title:'Lowercase "i"',
+      desc:'The pronoun "I" is always capitalized.', tip:'Write "I".', replace:() => 'I' },
+    { re:/^(\s*)([a-z][a-z']*)(?![A-Za-z0-9])/g, pre:true, sev:'low', concept:'Capitalization', title:'Text starts with lowercase',
+      desc:'The first word of the text should be capitalized.', tip:'Capitalize the first letter.',
+      replace:m => m[2].charAt(0).toUpperCase() + m[2].slice(1),
+      when:(m, t, s) => m[2] !== 'i' && !/^i'/.test(m[2]) && t[s + m[2].length] !== '.' },
+    { re:/([.!?]["')\]]*\s+)([a-z][a-z']*)(?![A-Za-z0-9])/g, pre:true, sev:'low', concept:'Capitalization', title:'Sentence starts with lowercase',
+      desc:'A sentence appears to start with a lowercase letter.', tip:'Capitalize the first letter of each sentence.',
+      replace:m => m[2].charAt(0).toUpperCase() + m[2].slice(1),
+      when:(m, t, s) => {
+        if (m[2] === 'i' || /^i'/.test(m[2])) return false;
+        if (t[s + m[2].length] === '.') return false;
+        const tok = ((t.slice(0, s).trimEnd().match(/(\S+)$/) || [''])[0]).toLowerCase().replace(/[.!?"')\]]+$/g, '');
+        return !ABBREV.has(tok) && !/^\d+$/.test(tok);
+      } },
+
+    // ----- Wording & style -----
+    { re:/\b(\w+)(\s+\1\b)+/gi, sev:'medium', concept:'Wording', title:'Repeated word',
+      desc:'The same word appears twice in a row — often a typo.', tip:'Remove the duplicate.',
+      replace:m => m[1], when:m => !/^(had|that|\d+)$/i.test(m[1]) },
+    { re:WORDY_RE, sev:'low', concept:'Concision',
+      title:m => `Wordy phrase: "${m[0].replace(/\s+/g, ' ')}"`, desc:'This phrase can be said more directly.',
+      tip:m => `Try "${WORDY[m[0].toLowerCase().replace(/\s+/g, ' ')]}" instead.`,
+      replace:m => WORDY[m[0].toLowerCase().replace(/\s+/g, ' ')] },
+    { re:PASSIVE_RE, sev:'low', concept:'Style', title:'Possible passive voice',
+      desc:'Passive voice can make writing feel indirect. Active voice is often clearer.',
+      tip:'Consider rewriting so the doer of the action is the subject.',
+      when:m => !NOT_PASSIVE.test(m[1]) }
+  ];
+
+  function scanLongSentences(text, out){
+    const re = /[^.!?\n]+[.!?]*/g;
+    let m;
+    while ((m = re.exec(text)) !== null){
+      const words = (m[0].match(/\b[\w']+\b/g) || []).length;
+      if (words > 35){
+        const lead = m[0].match(/^\s*/)[0].length;
+        out.push({
+          severity:'medium', concept:'Sentence Structure', title:'Very long sentence',
+          description:`This sentence has ${words} words and may be a run-on.`,
+          suggestion:'Split it where one complete idea ends and another begins.',
+          match:m[0].slice(lead), index:m.index + lead, length:m[0].length - lead, replacement:null
+        });
+      }
+    }
+  }
+
+  function analyzeText(text){
+    const norm = text.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+    const wordCount = (text.match(/\b[\w']+\b/g) || []).length;
+    const out = [];
+    for (const rule of RULES){
+      const flags = rule.re.flags.includes('g') ? rule.re.flags : rule.re.flags + 'g';
+      const re = new RegExp(rule.re.source, flags);
+      let m;
+      while ((m = re.exec(norm)) !== null){
+        if (m[0].length === 0){ re.lastIndex++; continue; }
+        const start = m.index + (rule.pre ? m[1].length : 0);
+        const end = m.index + m[0].length;
+        if (rule.when && !rule.when(m, norm, start, wordCount)) continue;
+        const matched = text.slice(start, end);
+        const val = v => typeof v === 'function' ? v(m, matched) : v;
+        let rep = rule.replace ? val(rule.replace) : null;
+        if (rep != null) rep = matchCase(matched, rep);
+        if (rep === matched) rep = null;
+        out.push({
+          severity:rule.sev, concept:rule.concept, title:val(rule.title), description:val(rule.desc),
+          suggestion:val(rule.tip), match:matched, index:start, length:end - start, replacement:rep
+        });
+      }
+    }
+    scanLongSentences(text, out);
+    const rank = { high:0, medium:1, low:2 };
+    const seen = new Set();
+    return out.filter(i => {
+      const k = `${i.index}|${i.length}|${i.title}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).sort((a, b) => a.index - b.index || rank[a.severity] - rank[b.severity]);
+  }
+
+  // ---------- LEARNING PATHS ----------
+  const GRAMMAR_LEARNING_PATHS = {
+    'Confusable Words': [
+      'Learn the core homophone pairs: their/there/they\'re, your/you\'re, its/it\'s',
+      'Write one memory trick per pair (e.g. "it\'s" always expands to "it is")',
+      'Practice swapping the contraction for its full form to test if a sentence still works',
+      'Learn then/than, affect/effect, lose/loose, who\'s/whose',
+      'Keep a personal list of the pairs you mix up and review it before sending anything'
+    ],
+    'Spelling': [
+      'Learn the top 50 commonly misspelled English words',
+      'Study the "i before e, except after c" rule and its exceptions',
+      'Learn doubled-consonant patterns (occurred, preferred, beginning)',
+      'Break long words into syllables to spell them (nec-es-sar-y)',
+      'Proofread by reading backwards, word by word'
+    ],
+    'Contractions & Apostrophes': [
+      'Learn that an apostrophe marks missing letters (do not → don\'t)',
+      'Study the difference between contractions and possessives',
+      'Practice with the common ones: can\'t, won\'t, I\'m, I\'ve, they\'re',
+      'Learn why possessive "its" has no apostrophe, but "it\'s" does',
+      'Read your text aloud and expand each contraction to check it'
+    ],
+    'Subject-Verb Agreement': [
+      'Learn singular and plural subjects (he/she/it vs. they/we/you)',
+      'Memorize the present tense forms of "to be" and "to have"',
+      'Practice finding the real subject when words come between it and the verb',
+      'Learn irregular plurals (people, children, men, women) and what verbs they take',
+      'Practice with "does/doesn\'t" vs. "do/don\'t"'
+    ],
+    'Articles (a / an)': [
+      'Learn that a/an depends on the sound, not the spelling',
+      'Study the tricky cases: an hour, a university, a European, an honest person',
+      'Practice with acronyms by saying the first letter aloud (an MBA, a UFO)',
+      'Learn when no article is needed (uncountable and plural nouns)',
+      'Read a paragraph aloud and listen for the "a/an" that sounds off'
+    ],
+    'Double Negatives': [
+      'Learn what counts as a negative word (not, no, never, nothing, nobody, hardly)',
+      'Practice rewriting "don\'t have no" as "don\'t have any"',
+      'Study why "can\'t hardly" is non-standard and "can hardly" is correct',
+      'Learn the difference between a double negative and a deliberate "not unhappy"',
+      'Practice reading sentences aloud and counting the negatives'
+    ],
+    'Punctuation': [
+      'Review end punctuation: periods, question marks and exclamation marks',
+      'Learn comma rules: lists, introductory phrases, and joining clauses',
+      'Study semicolons vs. periods for related sentences',
+      'Practice spacing rules (space after punctuation, none before)',
+      'Practice reading sentences aloud to find natural pauses'
+    ],
+    'Spacing': [
+      'Learn that punctuation attaches to the word before it',
+      'Use one space between words and after sentences',
+      'Turn on "show formatting marks" in your editor to spot stray spaces',
+      'Clean up pasted text before you check it',
+      'Re-read one paragraph slowly, looking only at spacing'
+    ],
+    'Capitalization': [
+      'Learn when to capitalize pronouns (always "I")',
+      'Study sentence-start and proper-noun capitalization rules',
+      'Learn which words stay lowercase (seasons, general directions)',
+      'Study title-case vs. sentence-case for headings',
+      'Practice proofreading from the end of a paragraph to the start'
+    ],
+    'Wording': [
+      'Watch for accidentally repeated words, especially at line breaks',
+      'Learn concise phrasing: say it once, say it clearly',
+      'Practice trimming redundancy from one paragraph a day',
+      'Read your text aloud — repeats are easier to hear than see',
+      'Use find-and-replace to search for words you tend to repeat'
+    ],
+    'Concision': [
+      'Learn the common wordy phrases (in order to, due to the fact that)',
+      'Practice replacing each with a single word (to, because)',
+      'Cut redundant pairs (each and every, end result, past history)',
+      'Aim to remove 10% of the words from your next draft',
+      'Ask of each sentence: "what is the one thing this says?"'
+    ],
+    'Sentence Structure': [
+      'Learn what makes a complete sentence (subject + verb + complete thought)',
+      'Study the difference between run-ons, comma splices and fragments',
+      'Practice splitting a long sentence into two or three shorter ones',
+      'Learn coordinating conjunctions (and, but, or, so) and when to use them',
+      'Aim for a mix of short and medium sentences for rhythm'
+    ],
+    'Style': [
+      'Study active vs. passive voice with side-by-side examples',
+      'Learn when passive voice is the better choice (unknown or unimportant doer)',
+      'Practice rewriting passive sentences with a clear subject doing the action',
+      'Replace vague verbs (is, was, make) with specific ones',
+      'Read your work aloud to catch awkward phrasing'
+    ]
+  };
+
+  function buildGrammarPath(issues){
+    const concepts = [...new Set(issues.map(i => i.concept))];
+    const per = concepts.length <= 2 ? 5 : concepts.length <= 4 ? 4 : 3;
+    return concepts.map(c => ({
+      concept: c,
+      steps: (GRAMMAR_LEARNING_PATHS[c] || ['Study the fundamentals of ' + c]).slice(0, per)
+    }));
+  }
+
+  // ---------- UI ----------
+  let lastGrammar = { text:'', issues:[] };
+
+  function computeWritingScore(issues, text){
+    const words = (text.match(/\b[\w']+\b/g) || []).length;
+    const weight = { high:3, medium:2, low:1 };
+    const weighted = issues.reduce((n, i) => n + weight[i.severity], 0);
+    const penalty = (weighted / Math.max(words, 20)) * 100 * 1.2;
+    const score = Math.max(0, Math.min(100, Math.round(100 - penalty)));
+    let label, color;
+    if (score >= 90){ label = 'Excellent'; color = 'var(--green)'; }
+    else if (score >= 75){ label = 'Good'; color = 'var(--primary)'; }
+    else if (score >= 55){ label = 'Needs polish'; color = 'var(--amber)'; }
+    else { label = 'Needs work'; color = 'var(--red)'; }
+    return { score, label, color, words };
+  }
+
+  function scoreHtml(sc, issueCount){
+    return `<div class="grammar-score">
+        <div class="grammar-score-ring" style="--pct:${sc.score}; --clr:${sc.color};"><span>${sc.score}</span></div>
+        <div class="grammar-score-meta">
+          <b>Writing score: ${sc.label}</b>
+          <span>${sc.words} word${sc.words === 1 ? '' : 's'} · ${issueCount} issue${issueCount === 1 ? '' : 's'} found</span>
+        </div>
+      </div>`;
+  }
+
+  function visible(s){ return /^\s|\s$/.test(s) ? s.replace(/ /g, '·') : s; }
+  function clip(s, n){ return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+  function renderGrammarEmpty(){
+    grammarResultsPanel.innerHTML = `<div class="empty-state"><span class="icon">✎</span><p>Run a check to see feedback here.</p></div>`;
+    grammarPreviewPanel.style.display = 'none';
+    grammarLearningPanel.style.display = 'none';
+    grammarCountLabel.textContent = '';
+  }
+
+  function renderGrammar(issues, text){
+    lastGrammar = { text, issues };
+    grammarCountLabel.textContent = issues.length === 0 ? 'No issues' : `${issues.length} issue${issues.length === 1 ? '' : 's'}`;
+
+    if (issues.length === 0){
+      grammarResultsPanel.innerHTML = scoreHtml(computeWritingScore(issues, text), 0) + `<div class="clean-state"><div class="badge">✓ ${pick(CLEAN_PHRASES_TEXT)}</div><p>Nothing matched our known grammar and style checks.</p></div>`;
+      grammarPreviewPanel.style.display = 'none';
+      grammarLearningPanel.style.display = 'none';
+      fireConfetti(grammarResultsPanel);
+      return;
+    }
+
+    const count = s => issues.filter(i => i.severity === s).length;
+    const fixable = issues.filter(i => i.replacement != null).length;
+    let html = scoreHtml(computeWritingScore(issues, text), issues.length) + `<div class="summary-row">
+        <div class="summary-chip high"><span class="num">${count('high')}</span><span class="lbl">High</span></div>
+        <div class="summary-chip medium"><span class="num">${count('medium')}</span><span class="lbl">Medium</span></div>
+        <div class="summary-chip low"><span class="num">${count('low')}</span><span class="lbl">Low</span></div>
+      </div>`;
+    if (fixable) html += `<div class="result-actions" style="margin:0 0 .9rem;"><button class="btn icon-btn" id="fixAllBtn">✨ Fix all (${fixable})</button></div>`;
+    html += `<div class="issue-list">`;
+    issues.forEach((iss, i) => {
+      html += `<div class="issue ${iss.severity}">
+          <div class="issue-head"><div class="issue-title">${escapeHtml(iss.title)}</div><div class="badge-sev ${iss.severity}">${iss.severity}</div></div>
+          <div class="issue-desc">${escapeHtml(iss.description)}</div>
+          <div class="issue-code"><span class="code">${escapeHtml(visible(clip(iss.match, 60)))}</span>${iss.replacement != null ? ` <span class="lineno">→</span> <span class="code">${escapeHtml(visible(clip(iss.replacement, 60)))}</span>` : ''}</div>
+          <div class="issue-fix fix-row"><span><b>Suggestion:</b> ${escapeHtml(iss.suggestion)}</span>${iss.replacement != null ? `<button class="btn icon-btn fix-btn" data-i="${i}">Apply fix</button>` : ''}</div>
+        </div>`;
+    });
+    html += `</div>`;
+    grammarResultsPanel.innerHTML = html;
+
+    // Highlighted preview (skips overlapping ranges)
+    let preview = '', cursor = 0;
+    issues.filter(i => i.length > 0)
+      .map(i => ({ start:i.index, end:i.index + i.length, severity:i.severity, title:i.title }))
+      .sort((a, b) => a.start - b.start)
+      .forEach(r => {
+        if (r.start < cursor) return;
+        preview += escapeHtml(text.slice(cursor, r.start));
+        preview += `<span class="${r.severity === 'high' ? 'flag high' : 'flag'}" title="${escapeHtml(r.title)}">${escapeHtml(text.slice(r.start, r.end))}</span>`;
+        cursor = r.end;
+      });
+    preview += escapeHtml(text.slice(cursor));
+    highlightedText.innerHTML = preview;
+    grammarPreviewPanel.style.display = '';
+
+    // Learning path, grouped by topic
+    let n = 0;
+    grammarStepList.innerHTML = buildGrammarPath(issues).map(g =>
+      `<div class="path-group">${escapeHtml(g.concept)}</div>` +
+      g.steps.map(step => `<div class="step-item checkable"><div class="step-num">${++n}</div><div class="step-text">${escapeHtml(step)}</div></div>`).join('')
+    ).join('');
+    grammarStepList.querySelectorAll('.step-item').forEach(el => {
+      el.addEventListener('click', () => {
+        el.classList.toggle('done');
+        const items = [...grammarStepList.querySelectorAll('.step-item')];
+        if (items.length && items.every(it => it.classList.contains('done'))){
+          fireConfetti(grammarStepList);
+          showToast('All done — writing skills leveled up!', '🎉');
+        }
+      });
+    });
+    grammarLearningPanel.style.display = '';
+  }
+
+  function checkGrammar(opts){
+    opts = opts || {};
+    if (checkBtn.disabled) return;
+    const text = textInput.value;
+    if (!text.trim()){ renderGrammarEmpty(); return; }
+
+    if (opts.silent){
+      const issues = analyzeText(text);
+      renderGrammar(issues, text);
+      return issues;
+    }
+
+    checkBtn.disabled = true;
+    grammarResultsPanel.innerHTML = `<div class="empty-state"><span class="icon">🔍</span><p id="grammarLoadingText"></p></div>`;
+    const stopRotation = rotateLoadingText(document.getElementById('grammarLoadingText'), LOADING_PHRASES_TEXT, 350);
+    setTimeout(() => {
+      stopRotation();
+      const issues = analyzeText(text);
+      renderGrammar(issues, text);
+      checkBtn.disabled = false;
+      bumpStat('grammar');
+      navCountGrammar.style.display = '';
+      navCountGrammar.textContent = stats.grammar;
+      pushHistory('grammar', text);
+      showToast(issues.length === 0 ? pick(CLEAN_PHRASES_TEXT) : `${pick(FOUND_PHRASES)} — ${issues.length} issue${issues.length === 1 ? '' : 's'}`, issues.length === 0 ? '🎉' : '✎');
+    }, 500);
+  }
+
+  function applyOneFix(i){
+    const iss = lastGrammar.issues[i];
+    if (!iss || iss.replacement == null) return;
+    const text = textInput.value;
+    if (text !== lastGrammar.text){ checkGrammar({ silent:true }); return; }
+    textInput.value = text.slice(0, iss.index) + iss.replacement + text.slice(iss.index + iss.length);
+    updateTextCounter();
+    const left = checkGrammar({ silent:true });
+    showToast('Fix applied', '✨');
+  }
+
+  function applyAllFixes(){
+    let text = textInput.value, total = 0;
+    for (let pass = 0; pass < 4; pass++){
+      const fixes = analyzeText(text).filter(f => f.replacement != null).sort((a, b) => b.index - a.index);
+      let limit = Infinity, applied = 0;
+      for (const f of fixes){
+        if (f.index + f.length > limit) continue;       // skip overlapping fixes; next pass picks them up
+        text = text.slice(0, f.index) + f.replacement + text.slice(f.index + f.length);
+        limit = f.index;
+        applied++;
+      }
+      total += applied;
+      if (!applied) break;
+    }
+    textInput.value = text;
+    updateTextCounter();
+    checkGrammar({ silent:true });
+    showToast(total ? `Applied ${total} fix${total === 1 ? '' : 'es'}` : 'Nothing to fix automatically', '✨');
+  }
+
+  grammarResultsPanel.addEventListener('click', e => {
+    const one = e.target.closest('.fix-btn');
+    if (one){ applyOneFix(parseInt(one.dataset.i, 10)); return; }
+    if (e.target.closest('#fixAllBtn')) applyAllFixes();
+  });
+
+  checkBtn.addEventListener('click', () => checkGrammar());
+  document.getElementById('textClearBtn').addEventListener('click', () => {
+    textInput.value = '';
+    updateTextCounter();
+    renderGrammarEmpty();
+  });
+
+  // =================================================================
+  // INIT
+  // =================================================================
+  updateTextCounter();
+  updateCodeCounter();
+
+})();
+</script>
+</body>
+</html>
