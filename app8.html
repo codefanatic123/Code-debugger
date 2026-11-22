@@ -787,6 +787,11 @@
   .flag{ background: var(--amber-bg); border-bottom: 2px solid var(--amber); border-radius: 2px; padding: 0 1px; }
   .flag.high{ background: var(--red-bg); border-bottom-color: var(--red); }
 
+  .fix-row{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
+  .issue-fix .fix-btn{ padding:.25rem .6rem; font-size:.74rem; }
+  .path-group{ font-family:var(--font-display); font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--primary); padding:1rem 0 .2rem; }
+  .path-group:first-child{ padding-top:0; }
+
   footer.site-footer{ text-align: center; padding: 2rem 1rem 3rem; font-size: 0.8rem; color: var(--text-faint); }
 
   .toast-wrap{ position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; z-index: 100; }
@@ -1974,299 +1979,533 @@
   textInput.addEventListener('input', updateTextCounter);
   textInput.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') checkGrammar(); });
 
-  const CONFUSABLE_WORDS = [
-    {
-      pattern: /\btheir\s+(is|are|was|were)\b/gi,
-      severity: 'high',
-      title: 'Possible "there"/"their" error',
-      description: '"Their" shows possession, while "there" is normally used to introduce or locate something.',
-      suggestion: 'Check whether you mean "there".',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\bthey're\s+(book|car|house|phone|computer|idea|name|mother|father|friend|parents)\b/gi,
-      severity: 'high',
-      title: 'Possible "they\'re"/"their" error',
-      description: '"They\'re" means "they are". "Their" shows possession.',
-      suggestion: 'Use "their" when showing possession.',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\byour\s+(is|are|was|were)\b/gi,
-      severity: 'high',
-      title: 'Possible "your"/"you\'re" error',
-      description: '"Your" shows possession. "You\'re" means "you are".',
-      suggestion: 'If you mean "you are", use "you\'re".',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\byou're\s+(book|car|house|phone|computer|idea|name|mother|father|friend|parents)\b/gi,
-      severity: 'high',
-      title: 'Possible "you\'re"/"your" error',
-      description: '"You\'re" means "you are", while "your" shows possession.',
-      suggestion: 'Use "your" when showing possession.',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\bits\s+(is|was|has|will)\b/gi,
-      severity: 'medium',
-      title: 'Possible "its"/"it\'s" error',
-      description: '"It\'s" means "it is" or "it has".',
-      suggestion: 'Consider using "it\'s".',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\bit's\s+(color|name|size|shape|owner|tail|head|value)\b/gi,
-      severity: 'medium',
-      title: 'Possible "it\'s"/"its" error',
-      description: '"Its" is the possessive form.',
-      suggestion: 'Use "its" when showing possession.',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\b(more|less|greater|better|worse)\s+then\b/gi,
-      severity: 'medium',
-      title: 'Possible "then"/"than" error',
-      description: 'Use "than" for comparisons and "then" for sequences in time.',
-      suggestion: 'Use "than" when comparing two things.',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\b(should|would|could)\s+of\b/gi,
-      severity: 'medium',
-      title: 'Possible "of"/"have" error',
-      description: 'The correct phrase is "should have", "would have", or "could have" — not "of".',
-      suggestion: 'Replace "of" with "have".',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\bto\s+(much|many)\b/gi,
-      severity: 'low',
-      title: 'Possible "to"/"too" error',
-      description: '"Too" means "excessively" or "also". "To" is a preposition.',
-      suggestion: 'Use "too" before "much" or "many".',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\b(loose|loosing)\b/gi,
-      severity: 'low',
-      title: 'Possible "loose"/"lose" error',
-      description: '"Loose" means not tight. "Lose" means to no longer have something.',
-      suggestion: 'If you mean "fail to keep", use "lose" / "losing".',
-      concept: 'Confusable Words'
-    },
-    {
-      pattern: /\baffects?\s+(on|to)\b/gi,
-      severity: 'low',
-      title: 'Possible "affect"/"effect" error',
-      description: '"Affect" is usually a verb; "effect" is usually a noun.',
-      suggestion: 'Check whether you need the noun "effect".',
-      concept: 'Confusable Words'
-    },
+  // ---------- ENGINE ----------
+  // Rules run on a copy of the text where curly quotes are straightened (same length,
+  // so match positions line up with the original text).
+  // Rule fields: re, sev, concept, title, desc, tip, replace (optional), pre (first capture
+  // group is untouched context before the target), when (optional extra check).
+
+  function matchCase(orig, repl){
+    if (orig.length > 1 && orig === orig.toUpperCase() && /[A-Z]/.test(orig)) return repl.toUpperCase();
+    if (/^[A-Z]/.test(orig)) return repl.charAt(0).toUpperCase() + repl.slice(1);
+    return repl;
+  }
+
+  const SPELLING = {
+    recieve:'receive', recieved:'received', definately:'definitely', definatly:'definitely', seperate:'separate',
+    seperately:'separately', occured:'occurred', occuring:'occurring', ocurred:'occurred', untill:'until', wich:'which',
+    alot:'a lot', becuase:'because', beleive:'believe', wierd:'weird', accomodate:'accommodate', acheive:'achieve',
+    goverment:'government', enviroment:'environment', tommorow:'tomorrow', tomorow:'tomorrow', neccessary:'necessary',
+    necesary:'necessary', occassion:'occasion', publically:'publicly', truely:'truly', greatful:'grateful',
+    independant:'independent', begining:'beginning', existance:'existence', foriegn:'foreign', freind:'friend',
+    freinds:'friends', adress:'address', calender:'calendar', arguement:'argument', comming:'coming', writting:'writing',
+    sucess:'success', sucessful:'successful', succesful:'successful', tounge:'tongue', oppurtunity:'opportunity',
+    teh:'the', adn:'and', thier:'their', realy:'really', embarass:'embarrass', harrass:'harass', wether:'whether',
+    interupt:'interrupt', prefered:'preferred', refered:'referred', transfered:'transferred', buisness:'business',
+    mispell:'misspell', noticable:'noticeable', priviledge:'privilege', recomend:'recommend', reccomend:'recommend',
+    suprise:'surprise', usualy:'usually', finaly:'finally', basicly:'basically', accross:'across', agressive:'aggressive',
+    apparant:'apparent', concious:'conscious', equiptment:'equipment', familar:'familiar', garantee:'guarantee',
+    happend:'happened', immediatly:'immediately', knowlege:'knowledge', maintainance:'maintenance', neice:'niece',
+    peice:'piece', posession:'possession', relevent:'relevant', responsability:'responsibility', rythm:'rhythm',
+    tendancy:'tendency', unfortunatly:'unfortunately'
+  };
+  const SPELL_RE = new RegExp('\\b(' + Object.keys(SPELLING).join('|') + ')\\b', 'gi');
+
+  const CONTRACTIONS = {
+    dont:"don't", doesnt:"doesn't", didnt:"didn't", isnt:"isn't", arent:"aren't", wasnt:"wasn't", werent:"weren't",
+    couldnt:"couldn't", shouldnt:"shouldn't", wouldnt:"wouldn't", havent:"haven't", hasnt:"hasn't", hadnt:"hadn't",
+    cant:"can't", wont:"won't", ive:"I've", theyre:"they're", youre:"you're", thats:"that's", whats:"what's",
+    whos:"who's", im:"I'm"
+  };
+  const CONTR_RE = new RegExp('\\b(' + Object.keys(CONTRACTIONS).join('|') + ')\\b', 'gi');
+
+  const WORDY = {
+    'in order to':'to', 'due to the fact that':'because', 'at this point in time':'now', 'at the present time':'now',
+    'in the event that':'if', 'for the purpose of':'for', 'has the ability to':'can', 'a large number of':'many',
+    'the majority of':'most', 'in spite of the fact that':'although', 'with regard to':'about', 'each and every':'every',
+    'end result':'result', 'past history':'history', 'very unique':'unique', 'irregardless':'regardless',
+    'completely eliminate':'eliminate', 'absolutely essential':'essential', 'close proximity':'proximity',
+    'general consensus':'consensus', 'advance planning':'planning', 'revert back':'revert', 'repeat again':'repeat',
+    'return back':'return', 'final outcome':'outcome', 'free gift':'gift'
+  };
+  const WORDY_RE = new RegExp('\\b(' + Object.keys(WORDY).sort((a, b) => b.length - a.length)
+    .map(k => k.replace(/ /g, '\\s+')).join('|') + ')\\b', 'gi');
+
+  const IRREGULAR = 'written|taken|given|made|seen|known|shown|broken|chosen|stolen|driven|eaten|forgotten|hidden|spoken|begun|built|caught|found|held|kept|lost|paid|sent|sold|taught|told|won|brought|bought|thought|grown|thrown|worn|torn|drawn';
+  const PASSIVE_RE = new RegExp('\\b(?:is|are|was|were|be|been|being|am)\\s+(?:\\w+ly\\s+)?((?:\\w{3,}ed)|(?:' + IRREGULAR + '))\\b', 'gi');
+  const NOT_PASSIVE = /^(tired|excited|interested|bored|worried|surprised|pleased|scared|confused|married|concerned|supposed|related|located|delighted|shocked|amazed|annoyed|exhausted|embarrassed|disappointed|satisfied|determined|qualified|limited|advanced|experienced|detailed|talented|crowded|alarmed|puzzled|terrified|frightened|obsessed|dedicated|committed|indeed|hundred|speed|breed|proceed|succeed|exceed)$/i;
+
+  const ABBREV = new Set(['e.g','i.e','etc','vs','dr','mr','mrs','ms','prof','inc','approx','cf','no','fig','st','jr','sr']);
+  const AUX_BEFORE = /\b(does|did|do|will|would|can|could|should|shall|may|might|must|to|let|make|makes|made|help|helps|see|saw|hear|heard|watch|watched)\s+$/i;
+
+  const AN_SPECIAL = /^(hour|honest|honou?r|heir)/i;
+  const A_SPECIAL = /^(unique|union|unit|unite|united|unity|universe|universal|university|uniform|unicorn|unify|unified|unilateral|unicycle|us[eu]|uti|eu|ubi|ufo|one\b|once\b)/i;
+  function needsAn(word){
+    if (AN_SPECIAL.test(word)) return true;
+    if (A_SPECIAL.test(word)) return false;
+    return /^[aeiou]/i.test(word);
+  }
+
+  const SUBJ_NAMES = '(?:book|car|house|phone|computer|idea|name|mother|father|friend|parents|team|family|dog|cat|home|work|own|money)';
+
+  const RULES = [
+    // ----- Confusable words -----
+    { re:/\b(their)\s+(is|are|was|were)\b/gi, sev:'high', concept:'Confusable Words',
+      title:'Possible "there"/"their" error', desc:'"Their" shows possession; "there" introduces or locates something.',
+      tip:'Use "there" here.', replace:m => `there ${m[2]}` },
+    { re:new RegExp("\\bthey're\\s+(" + SUBJ_NAMES + ")\\b", 'gi'), sev:'high', concept:'Confusable Words',
+      title:'Possible "they\'re"/"their" error', desc:'"They\'re" means "they are"; "their" shows possession.',
+      tip:'Use "their" for possession.', replace:m => `their ${m[1]}` },
+    { re:/\byour\s+(going|doing|being|coming|welcome|not|right|wrong|late|ready|so|too|very|a|an|the|always|never)\b/gi, sev:'high', concept:'Confusable Words',
+      title:'Possible "your"/"you\'re" error', desc:'"Your" shows possession; "you\'re" means "you are".',
+      tip:'Use "you\'re" here.', replace:m => `you're ${m[1]}` },
+    { re:/\byour\s+(is|are|was|were)\b/gi, sev:'high', concept:'Confusable Words',
+      title:'Possible "your"/"you\'re" error', desc:'"Your" shows possession; "you\'re" means "you are".',
+      tip:'If you mean "you are", write "you\'re".' },
+    { re:new RegExp("\\byou're\\s+(" + SUBJ_NAMES + ")\\b", 'gi'), sev:'high', concept:'Confusable Words',
+      title:'Possible "you\'re"/"your" error', desc:'"You\'re" means "you are"; "your" shows possession.',
+      tip:'Use "your" for possession.', replace:m => `your ${m[1]}` },
+    { re:/\bits\s+(is|was|has|will|to|too|not|a|an|very|so|just|been|going|about|already)\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "its"/"it\'s" error', desc:'"It\'s" means "it is" or "it has"; "its" is possessive.',
+      tip:'Use "it\'s" here.', replace:m => `it's ${m[1]}` },
+    { re:/\bit's\s+(own|color|colour|name|size|shape|owner|tail|head|value|purpose|meaning|fault)\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "it\'s"/"its" error', desc:'"Its" (no apostrophe) is the possessive form.',
+      tip:'Use "its" for possession.', replace:m => `its ${m[1]}` },
+    { re:/\b(more|less|greater|better|worse|bigger|smaller|rather|other|faster|slower|older|younger|higher|lower)\s+then\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "then"/"than" error', desc:'Use "than" for comparisons and "then" for sequence in time.',
+      tip:'Use "than" when comparing.', replace:m => `${m[1]} than` },
+    { re:/\b(should|would|could|must|might)\s+of\b/gi, sev:'high', concept:'Confusable Words',
+      title:'"of" instead of "have"', desc:'The correct phrase is "should have", "would have", "could have" — never "of".',
+      tip:'Replace "of" with "have".', replace:m => `${m[1]} have` },
+    { re:/\b(should|would|could|must)n'?t\s+of\b/gi, sev:'high', concept:'Confusable Words',
+      title:'"of" instead of "have"', desc:'The correct phrase is "shouldn\'t have", "couldn\'t have", and so on.',
+      tip:'Replace "of" with "have".', replace:m => `${m[1]}n't have` },
+    { re:/\bto\s+(much|many|late|soon)\b/gi, sev:'low', concept:'Confusable Words',
+      title:'Possible "to"/"too" error', desc:'"Too" means "excessively" or "also"; "to" is a preposition.',
+      tip:'Use "too" before this word.', replace:m => `too ${m[1]}` },
+    { re:/\bloosing\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "loosing"/"losing" error', desc:'"Losing" (one o) means failing to keep something.',
+      tip:'Use "losing".', replace:() => 'losing' },
+    { re:/\b(to|will|might|could|would|don't|didn't|can't|won't)\s+loose\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "loose"/"lose" error', desc:'"Loose" means not tight; "lose" means to no longer have something.',
+      tip:'Use "lose" here.', replace:m => `${m[1]} lose` },
+    { re:/\bwho's\s+(book|car|house|phone|idea|name|turn|fault|side|dog|cat|bag)\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'Possible "who\'s"/"whose" error', desc:'"Who\'s" means "who is"; "whose" shows possession.',
+      tip:'Use "whose" for possession.', replace:m => `whose ${m[1]}` },
+    { re:/\bbetween\s+you\s+and\s+I\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'"between you and I"', desc:'After a preposition like "between", use the object form "me".',
+      tip:'Write "between you and me".', replace:() => 'between you and me' },
+    { re:/\baffects?\s+on\b/gi, sev:'low', concept:'Confusable Words',
+      title:'Possible "affect"/"effect" error', desc:'"Affect" is usually a verb; "effect" is usually a noun ("an effect on").',
+      tip:'Use "effect on" (noun), or drop "on" with the verb "affect".' },
+    { re:/\bsuppose\s+to\b/gi, sev:'medium', concept:'Confusable Words',
+      title:'"suppose to"', desc:'The expression is "supposed to".', tip:'Use "supposed to".', replace:() => 'supposed to' },
+
+    // ----- Spelling & contractions -----
+    { re:SPELL_RE, sev:'high', concept:'Spelling',
+      title:m => `Possible misspelling: "${m[0]}"`, desc:'This word looks misspelled.',
+      tip:m => `Did you mean "${SPELLING[m[0].toLowerCase()]}"?`, replace:m => SPELLING[m[0].toLowerCase()] },
+    { re:CONTR_RE, sev:'medium', concept:'Contractions & Apostrophes',
+      title:m => `Missing apostrophe: "${m[0]}"`, desc:'Contractions need an apostrophe where letters are left out.',
+      tip:m => `Write "${CONTRACTIONS[m[0].toLowerCase()]}".`, replace:m => CONTRACTIONS[m[0].toLowerCase()],
+      when:m => m[0] !== 'IM' },
+
+    // ----- Subject-verb agreement -----
+    { re:/\b(he|she|it)\s+(don't|are)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'Singular subjects (he, she, it) take "doesn\'t" and "is".',
+      tip:'Use the singular verb form.', replace:m => `${m[1]} ${m[2].toLowerCase() === "don't" ? "doesn't" : 'is'}` },
+    { re:/\b(he|she|it)\s+(have|do)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'Singular subjects (he, she, it) take "has" and "does".',
+      tip:'Use the singular verb form.', replace:m => `${m[1]} ${m[2].toLowerCase() === 'have' ? 'has' : 'does'}`,
+      when:(m, t, s) => !AUX_BEFORE.test(t.slice(0, s)) },
+    { re:/\b(they|we|you)\s+(is|was|has|doesn't)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'"They", "we" and "you" take "are", "were", "have" and "don\'t".',
+      tip:'Use the plural verb form.',
+      replace:m => `${m[1]} ${({ is:'are', was:'were', has:'have', "doesn't":"don't" })[m[2].toLowerCase()]}` },
+    { re:/\b(I)\s+(is|are|has|does|doesn't)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'"I" takes "am", "have", "do" and "don\'t".',
+      tip:'Use the correct form for "I".',
+      replace:m => `${m[1]} ${({ is:'am', are:'am', has:'have', does:'do', "doesn't":"don't" })[m[2].toLowerCase()]}` },
+    { re:/\b(people|children|men|women|police)\s+(is|was|has)\b/gi, sev:'high', concept:'Subject-Verb Agreement',
+      title:'Subject-verb agreement', desc:'These are plural nouns and take plural verbs.',
+      tip:'Use the plural verb form.',
+      replace:m => `${m[1]} ${({ is:'are', was:'were', has:'have' })[m[2].toLowerCase()]}` },
+
+    // ----- a / an -----
+    { re:/\b(an?)(?=\s+([A-Za-z]+))/gi, sev:'medium', concept:'Articles (a / an)',
+      title:'"a" vs "an"', desc:'Use "an" before a vowel sound and "a" before a consonant sound.',
+      tip:m => needsAn(m[2]) ? 'Use "an" before this word.' : 'Use "a" before this word.',
+      replace:m => needsAn(m[2]) ? 'an' : 'a',
+      when:(m, t, s) => {
+        const art = m[1], word = m[2];
+        if (word.length === 1 || /^[A-Z]{2,}$/.test(word)) return false;
+        if (/^[A-Z]/.test(art) && s > 0 && !/[.!?]["')\]]*\s*$/.test(t.slice(0, s))) return false;
+        return (art.toLowerCase() === 'an') !== needsAn(word);
+      } },
+
+    // ----- Double negatives -----
+    { re:/\b(don't|doesn't|didn't|can't|couldn't|won't|wouldn't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|shouldn't)\s+(?:\w+\s+)?(no\s+(?!to\b|more\b|longer\b)\w+|nothing|nobody|nowhere|none|hardly|never)\b/gi,
+      sev:'medium', concept:'Double Negatives', title:'Double negative',
+      desc:'Two negatives in one clause cancel each other out or sound confusing.',
+      tip:'Use one negative: "don\'t have any", "can hardly", "saw nothing".' },
+
+    // ----- Spacing & punctuation -----
+    { re:/[ \t]+[,.;:!?]/g, sev:'medium', concept:'Spacing', title:'Space before punctuation',
+      desc:'Punctuation should attach directly to the word before it.',
+      tip:'Remove the space before the punctuation mark.', replace:m => m[0].slice(-1),
+      when:(m, t, s) => !(m[0].trim() === ':' && /[)(DPp\/]/.test(t[s + m[0].length] || '')) },
+    { re:/([a-z])([.!?])(?=[A-Z][a-z])/g, pre:true, sev:'medium', concept:'Punctuation', title:'Missing space after sentence end',
+      desc:'A space is needed between one sentence and the next.', tip:'Add a space after the punctuation mark.',
+      replace:m => m[2] + ' ' },
+    { re:/([a-z])([,;])(?=[A-Za-z])/g, pre:true, sev:'medium', concept:'Punctuation', title:'Missing space after comma',
+      desc:'Commas and semicolons should be followed by a space.', tip:'Add a space after the comma.',
+      replace:m => m[2] + ' ' },
+    { re:/([!?,])\1+/g, sev:'low', concept:'Punctuation', title:'Repeated punctuation',
+      desc:'Repeated punctuation marks look unpolished in formal writing.', tip:'Use a single mark.',
+      replace:m => m[1] },
+    { re:/(\S)( {2,})(?=\S)/g, pre:true, sev:'low', concept:'Spacing', title:'Extra spaces',
+      desc:'There is more than one space between these words.', tip:'Use a single space.', replace:() => ' ' },
+    { re:/[A-Za-z0-9](?=\s*$)/g, sev:'low', concept:'Punctuation', title:'Missing end punctuation',
+      desc:'The text does not end with a period, question mark or exclamation mark.',
+      tip:'Finish the last sentence with punctuation.', replace:m => m[0] + '.',
+      when:(m, t, s, wc) => wc >= 4 },
+
+    // ----- Capitalization -----
+    { re:/(^|[^\w.'(-])i(?![\w.)-])/g, pre:true, sev:'medium', concept:'Capitalization', title:'Lowercase "i"',
+      desc:'The pronoun "I" is always capitalized.', tip:'Write "I".', replace:() => 'I' },
+    { re:/^(\s*)([a-z][a-z']*)(?![A-Za-z0-9])/g, pre:true, sev:'low', concept:'Capitalization', title:'Text starts with lowercase',
+      desc:'The first word of the text should be capitalized.', tip:'Capitalize the first letter.',
+      replace:m => m[2].charAt(0).toUpperCase() + m[2].slice(1),
+      when:(m, t, s) => m[2] !== 'i' && !/^i'/.test(m[2]) && t[s + m[2].length] !== '.' },
+    { re:/([.!?]["')\]]*\s+)([a-z][a-z']*)(?![A-Za-z0-9])/g, pre:true, sev:'low', concept:'Capitalization', title:'Sentence starts with lowercase',
+      desc:'A sentence appears to start with a lowercase letter.', tip:'Capitalize the first letter of each sentence.',
+      replace:m => m[2].charAt(0).toUpperCase() + m[2].slice(1),
+      when:(m, t, s) => {
+        if (m[2] === 'i' || /^i'/.test(m[2])) return false;
+        if (t[s + m[2].length] === '.') return false;
+        const tok = ((t.slice(0, s).trimEnd().match(/(\S+)$/) || [''])[0]).toLowerCase().replace(/[.!?"')\]]+$/g, '');
+        return !ABBREV.has(tok) && !/^\d+$/.test(tok);
+      } },
+
+    // ----- Wording & style -----
+    { re:/\b(\w+)(\s+\1\b)+/gi, sev:'medium', concept:'Wording', title:'Repeated word',
+      desc:'The same word appears twice in a row — often a typo.', tip:'Remove the duplicate.',
+      replace:m => m[1], when:m => !/^(had|that|\d+)$/i.test(m[1]) },
+    { re:WORDY_RE, sev:'low', concept:'Concision',
+      title:m => `Wordy phrase: "${m[0].replace(/\s+/g, ' ')}"`, desc:'This phrase can be said more directly.',
+      tip:m => `Try "${WORDY[m[0].toLowerCase().replace(/\s+/g, ' ')]}" instead.`,
+      replace:m => WORDY[m[0].toLowerCase().replace(/\s+/g, ' ')] },
+    { re:PASSIVE_RE, sev:'low', concept:'Style', title:'Possible passive voice',
+      desc:'Passive voice can make writing feel indirect. Active voice is often clearer.',
+      tip:'Consider rewriting so the doer of the action is the subject.',
+      when:m => !NOT_PASSIVE.test(m[1]) }
   ];
 
-  const GRAMMAR_STYLE_CHECKS = [
-    {
-      test: (text) => /\s+[,.;:!?]/g.test(text),
-      severity: 'medium',
-      title: 'Space before punctuation',
-      description: 'There is whitespace before punctuation — punctuation should attach to the word before it.',
-      suggestion: 'Remove the space before the punctuation mark.',
-      concept: 'Punctuation'
-    },
-    {
-      test: (text) => /[.!?]\s*[a-z]/.test(text),
-      severity: 'low',
-      title: 'Sentence starts with lowercase',
-      description: 'A sentence appears to start with a lowercase letter.',
-      suggestion: 'Capitalize the first letter after each sentence ending.',
-      concept: 'Capitalization'
-    },
-    {
-      test: (text) => /\bi\b/.test(text),
-      severity: 'low',
-      title: 'Lowercase "i"',
-      description: 'The pronoun "I" should be capitalized.',
-      suggestion: 'Replace "i" with "I" when it stands alone.',
-      concept: 'Capitalization'
-    },
-    {
-      test: (text) => /(\b\w+\b)(\s+\1\b){2,}/i.test(text),
-      severity: 'low',
-      title: 'Repeated word',
-      description: 'The same word repeats several times in a row — this often signals a typo.',
-      suggestion: 'Remove the duplicate word.',
-      concept: 'Wording'
-    },
-    {
-      test: (text) => {
-        const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
-        return sentences.some(s => (s.match(/\b\w+\b/g) || []).length > 35);
-      },
-      severity: 'medium',
-      title: 'Very long sentence',
-      description: 'A sentence has more than 35 words and may be a run-on.',
-      suggestion: 'Consider splitting the sentence at a natural break.',
-      concept: 'Sentence Structure'
-    },
-    {
-      test: (text) => /\b(is|are|was|were|be|been|being)\s+\w+(ed|en)\b/i.test(text),
-      severity: 'low',
-      title: 'Possible passive voice',
-      description: 'Passive voice can make writing feel indirect. Active voice is often clearer.',
-      suggestion: 'Consider rephrasing in active voice where clarity matters.',
-      concept: 'Style'
-    },
-  ];
+  function scanLongSentences(text, out){
+    const re = /[^.!?\n]+[.!?]*/g;
+    let m;
+    while ((m = re.exec(text)) !== null){
+      const words = (m[0].match(/\b[\w']+\b/g) || []).length;
+      if (words > 35){
+        const lead = m[0].match(/^\s*/)[0].length;
+        out.push({
+          severity:'medium', concept:'Sentence Structure', title:'Very long sentence',
+          description:`This sentence has ${words} words and may be a run-on.`,
+          suggestion:'Split it where one complete idea ends and another begins.',
+          match:m[0].slice(lead), index:m.index + lead, length:m[0].length - lead, replacement:null
+        });
+      }
+    }
+  }
 
+  function analyzeText(text){
+    const norm = text.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+    const wordCount = (text.match(/\b[\w']+\b/g) || []).length;
+    const out = [];
+    for (const rule of RULES){
+      const flags = rule.re.flags.includes('g') ? rule.re.flags : rule.re.flags + 'g';
+      const re = new RegExp(rule.re.source, flags);
+      let m;
+      while ((m = re.exec(norm)) !== null){
+        if (m[0].length === 0){ re.lastIndex++; continue; }
+        const start = m.index + (rule.pre ? m[1].length : 0);
+        const end = m.index + m[0].length;
+        if (rule.when && !rule.when(m, norm, start, wordCount)) continue;
+        const matched = text.slice(start, end);
+        const val = v => typeof v === 'function' ? v(m, matched) : v;
+        let rep = rule.replace ? val(rule.replace) : null;
+        if (rep != null) rep = matchCase(matched, rep);
+        if (rep === matched) rep = null;
+        out.push({
+          severity:rule.sev, concept:rule.concept, title:val(rule.title), description:val(rule.desc),
+          suggestion:val(rule.tip), match:matched, index:start, length:end - start, replacement:rep
+        });
+      }
+    }
+    scanLongSentences(text, out);
+    const rank = { high:0, medium:1, low:2 };
+    const seen = new Set();
+    return out.filter(i => {
+      const k = `${i.index}|${i.length}|${i.title}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).sort((a, b) => a.index - b.index || rank[a.severity] - rank[b.severity]);
+  }
+
+  // ---------- LEARNING PATHS ----------
   const GRAMMAR_LEARNING_PATHS = {
-    'Confusable Words': ['Learn common homophones (their/there, its/it\'s)', 'Practice choosing the right word in context', 'Keep a personal list of words you mix up'],
-    'Punctuation': ['Review punctuation spacing rules', 'Study comma vs. period usage', 'Practice reading sentences aloud to spot pauses'],
-    'Capitalization': ['Learn when to capitalize pronouns', 'Study sentence-start and proper-noun rules', 'Practice proofreading from the end of a paragraph'],
-    'Wording': ['Watch for accidental repeated words', 'Learn concise phrasing', 'Practice trimming redundancy'],
-    'Sentence Structure': ['Learn how to break long sentences into clauses', 'Study the difference between run-ons and fragments', 'Practice rewriting long sentences for clarity'],
-    'Style': ['Study active vs. passive voice', 'Learn when passive voice is appropriate', 'Practice reading your work out loud to catch awkwardness'],
+    'Confusable Words': [
+      'Learn the core homophone pairs: their/there/they\'re, your/you\'re, its/it\'s',
+      'Write one memory trick per pair (e.g. "it\'s" always expands to "it is")',
+      'Practice swapping the contraction for its full form to test if a sentence still works',
+      'Learn then/than, affect/effect, lose/loose, who\'s/whose',
+      'Keep a personal list of the pairs you mix up and review it before sending anything'
+    ],
+    'Spelling': [
+      'Learn the top 50 commonly misspelled English words',
+      'Study the "i before e, except after c" rule and its exceptions',
+      'Learn doubled-consonant patterns (occurred, preferred, beginning)',
+      'Break long words into syllables to spell them (nec-es-sar-y)',
+      'Proofread by reading backwards, word by word'
+    ],
+    'Contractions & Apostrophes': [
+      'Learn that an apostrophe marks missing letters (do not → don\'t)',
+      'Study the difference between contractions and possessives',
+      'Practice with the common ones: can\'t, won\'t, I\'m, I\'ve, they\'re',
+      'Learn why possessive "its" has no apostrophe, but "it\'s" does',
+      'Read your text aloud and expand each contraction to check it'
+    ],
+    'Subject-Verb Agreement': [
+      'Learn singular and plural subjects (he/she/it vs. they/we/you)',
+      'Memorize the present tense forms of "to be" and "to have"',
+      'Practice finding the real subject when words come between it and the verb',
+      'Learn irregular plurals (people, children, men, women) and what verbs they take',
+      'Practice with "does/doesn\'t" vs. "do/don\'t"'
+    ],
+    'Articles (a / an)': [
+      'Learn that a/an depends on the sound, not the spelling',
+      'Study the tricky cases: an hour, a university, a European, an honest person',
+      'Practice with acronyms by saying the first letter aloud (an MBA, a UFO)',
+      'Learn when no article is needed (uncountable and plural nouns)',
+      'Read a paragraph aloud and listen for the "a/an" that sounds off'
+    ],
+    'Double Negatives': [
+      'Learn what counts as a negative word (not, no, never, nothing, nobody, hardly)',
+      'Practice rewriting "don\'t have no" as "don\'t have any"',
+      'Study why "can\'t hardly" is non-standard and "can hardly" is correct',
+      'Learn the difference between a double negative and a deliberate "not unhappy"',
+      'Practice reading sentences aloud and counting the negatives'
+    ],
+    'Punctuation': [
+      'Review end punctuation: periods, question marks and exclamation marks',
+      'Learn comma rules: lists, introductory phrases, and joining clauses',
+      'Study semicolons vs. periods for related sentences',
+      'Practice spacing rules (space after punctuation, none before)',
+      'Practice reading sentences aloud to find natural pauses'
+    ],
+    'Spacing': [
+      'Learn that punctuation attaches to the word before it',
+      'Use one space between words and after sentences',
+      'Turn on "show formatting marks" in your editor to spot stray spaces',
+      'Clean up pasted text before you check it',
+      'Re-read one paragraph slowly, looking only at spacing'
+    ],
+    'Capitalization': [
+      'Learn when to capitalize pronouns (always "I")',
+      'Study sentence-start and proper-noun capitalization rules',
+      'Learn which words stay lowercase (seasons, general directions)',
+      'Study title-case vs. sentence-case for headings',
+      'Practice proofreading from the end of a paragraph to the start'
+    ],
+    'Wording': [
+      'Watch for accidentally repeated words, especially at line breaks',
+      'Learn concise phrasing: say it once, say it clearly',
+      'Practice trimming redundancy from one paragraph a day',
+      'Read your text aloud — repeats are easier to hear than see',
+      'Use find-and-replace to search for words you tend to repeat'
+    ],
+    'Concision': [
+      'Learn the common wordy phrases (in order to, due to the fact that)',
+      'Practice replacing each with a single word (to, because)',
+      'Cut redundant pairs (each and every, end result, past history)',
+      'Aim to remove 10% of the words from your next draft',
+      'Ask of each sentence: "what is the one thing this says?"'
+    ],
+    'Sentence Structure': [
+      'Learn what makes a complete sentence (subject + verb + complete thought)',
+      'Study the difference between run-ons, comma splices and fragments',
+      'Practice splitting a long sentence into two or three shorter ones',
+      'Learn coordinating conjunctions (and, but, or, so) and when to use them',
+      'Aim for a mix of short and medium sentences for rhythm'
+    ],
+    'Style': [
+      'Study active vs. passive voice with side-by-side examples',
+      'Learn when passive voice is the better choice (unknown or unimportant doer)',
+      'Practice rewriting passive sentences with a clear subject doing the action',
+      'Replace vague verbs (is, was, make) with specific ones',
+      'Read your work aloud to catch awkward phrasing'
+    ]
   };
 
-  function checkGrammar(){
-    const text = textInput.value;
-    if (!text.trim()){
-      grammarResultsPanel.innerHTML = `<div class="empty-state"><span class="icon">✎</span><p>Run a check to see feedback here.</p></div>`;
+  function buildGrammarPath(issues){
+    const concepts = [...new Set(issues.map(i => i.concept))];
+    const per = concepts.length <= 2 ? 5 : concepts.length <= 4 ? 4 : 3;
+    return concepts.map(c => ({
+      concept: c,
+      steps: (GRAMMAR_LEARNING_PATHS[c] || ['Study the fundamentals of ' + c]).slice(0, per)
+    }));
+  }
+
+  // ---------- UI ----------
+  let lastGrammar = { text:'', issues:[] };
+
+  function visible(s){ return /^\s|\s$/.test(s) ? s.replace(/ /g, '·') : s; }
+  function clip(s, n){ return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+  function renderGrammarEmpty(){
+    grammarResultsPanel.innerHTML = `<div class="empty-state"><span class="icon">✎</span><p>Run a check to see feedback here.</p></div>`;
+    grammarPreviewPanel.style.display = 'none';
+    grammarLearningPanel.style.display = 'none';
+    grammarCountLabel.textContent = '';
+  }
+
+  function renderGrammar(issues, text){
+    lastGrammar = { text, issues };
+    grammarCountLabel.textContent = issues.length === 0 ? 'No issues' : `${issues.length} issue${issues.length === 1 ? '' : 's'}`;
+
+    if (issues.length === 0){
+      grammarResultsPanel.innerHTML = `<div class="clean-state"><div class="badge">✓ ${pick(CLEAN_PHRASES_TEXT)}</div><p>Nothing matched our known grammar and style checks.</p></div>`;
       grammarPreviewPanel.style.display = 'none';
       grammarLearningPanel.style.display = 'none';
-      grammarCountLabel.textContent = '';
+      fireConfetti(grammarResultsPanel);
       return;
     }
+
+    const count = s => issues.filter(i => i.severity === s).length;
+    const fixable = issues.filter(i => i.replacement != null).length;
+    let html = `<div class="summary-row">
+        <div class="summary-chip high"><span class="num">${count('high')}</span><span class="lbl">High</span></div>
+        <div class="summary-chip medium"><span class="num">${count('medium')}</span><span class="lbl">Medium</span></div>
+        <div class="summary-chip low"><span class="num">${count('low')}</span><span class="lbl">Low</span></div>
+      </div>`;
+    if (fixable) html += `<div class="result-actions" style="margin:0 0 .9rem;"><button class="btn icon-btn" id="fixAllBtn">✨ Fix all (${fixable})</button></div>`;
+    html += `<div class="issue-list">`;
+    issues.forEach((iss, i) => {
+      html += `<div class="issue ${iss.severity}">
+          <div class="issue-head"><div class="issue-title">${escapeHtml(iss.title)}</div><div class="badge-sev ${iss.severity}">${iss.severity}</div></div>
+          <div class="issue-desc">${escapeHtml(iss.description)}</div>
+          <div class="issue-code"><span class="code">${escapeHtml(visible(clip(iss.match, 60)))}</span>${iss.replacement != null ? ` <span class="lineno">→</span> <span class="code">${escapeHtml(visible(clip(iss.replacement, 60)))}</span>` : ''}</div>
+          <div class="issue-fix fix-row"><span><b>Suggestion:</b> ${escapeHtml(iss.suggestion)}</span>${iss.replacement != null ? `<button class="btn icon-btn fix-btn" data-i="${i}">Apply fix</button>` : ''}</div>
+        </div>`;
+    });
+    html += `</div>`;
+    grammarResultsPanel.innerHTML = html;
+
+    // Highlighted preview (skips overlapping ranges)
+    let preview = '', cursor = 0;
+    issues.filter(i => i.length > 0)
+      .map(i => ({ start:i.index, end:i.index + i.length, severity:i.severity, title:i.title }))
+      .sort((a, b) => a.start - b.start)
+      .forEach(r => {
+        if (r.start < cursor) return;
+        preview += escapeHtml(text.slice(cursor, r.start));
+        preview += `<span class="${r.severity === 'high' ? 'flag high' : 'flag'}" title="${escapeHtml(r.title)}">${escapeHtml(text.slice(r.start, r.end))}</span>`;
+        cursor = r.end;
+      });
+    preview += escapeHtml(text.slice(cursor));
+    highlightedText.innerHTML = preview;
+    grammarPreviewPanel.style.display = '';
+
+    // Learning path, grouped by topic
+    let n = 0;
+    grammarStepList.innerHTML = buildGrammarPath(issues).map(g =>
+      `<div class="path-group">${escapeHtml(g.concept)}</div>` +
+      g.steps.map(step => `<div class="step-item checkable"><div class="step-num">${++n}</div><div class="step-text">${escapeHtml(step)}</div></div>`).join('')
+    ).join('');
+    grammarStepList.querySelectorAll('.step-item').forEach(el => {
+      el.addEventListener('click', () => {
+        el.classList.toggle('done');
+        const items = [...grammarStepList.querySelectorAll('.step-item')];
+        if (items.length && items.every(it => it.classList.contains('done'))){
+          fireConfetti(grammarStepList);
+          showToast('All done — writing skills leveled up!', '🎉');
+        }
+      });
+    });
+    grammarLearningPanel.style.display = '';
+  }
+
+  function checkGrammar(opts){
+    opts = opts || {};
+    if (checkBtn.disabled) return;
+    const text = textInput.value;
+    if (!text.trim()){ renderGrammarEmpty(); return; }
+
+    if (opts.silent){
+      const issues = analyzeText(text);
+      renderGrammar(issues, text);
+      return issues;
+    }
+
     checkBtn.disabled = true;
     grammarResultsPanel.innerHTML = `<div class="empty-state"><span class="icon">🔍</span><p id="grammarLoadingText"></p></div>`;
     const stopRotation = rotateLoadingText(document.getElementById('grammarLoadingText'), LOADING_PHRASES_TEXT, 350);
-
     setTimeout(() => {
       stopRotation();
-      const issues = [];
-
-      for (const rule of CONFUSABLE_WORDS){
-        const re = new RegExp(rule.pattern.source, rule.pattern.flags);
-        let m;
-        while ((m = re.exec(text)) !== null){
-          issues.push({
-            severity: rule.severity,
-            title: rule.title,
-            description: rule.description,
-            suggestion: rule.suggestion,
-            concept: rule.concept,
-            match: m[0],
-            index: m.index,
-            length: m[0].length
-          });
-          if (m[0].length === 0) re.lastIndex++;
-        }
-      }
-
-      for (const rule of GRAMMAR_STYLE_CHECKS){
-        try {
-          if (rule.test(text)){
-            issues.push({
-              severity: rule.severity,
-              title: rule.title,
-              description: rule.description,
-              suggestion: rule.suggestion,
-              concept: rule.concept,
-              match: '',
-              index: 0,
-              length: 0
-            });
-          }
-        } catch(e){ /* skip failing rule */ }
-      }
-
-      issues.sort((a,b) => a.index - b.index);
-
-      grammarCountLabel.textContent = issues.length === 0
-        ? 'No issues'
-        : `${issues.length} issue${issues.length === 1 ? '' : 's'}`;
-
-      if (issues.length === 0){
-        grammarResultsPanel.innerHTML = `<div class="clean-state"><div class="badge">✓ ${pick(CLEAN_PHRASES_TEXT)}</div><p>Nothing matched our known grammar and style checks.</p></div>`;
-        grammarPreviewPanel.style.display = 'none';
-        grammarLearningPanel.style.display = 'none';
-        fireConfetti(grammarResultsPanel);
-      } else {
-        let html = `<div class="summary-row">
-            <div class="summary-chip high"><span class="num">${issues.filter(i=>i.severity==='high').length}</span><span class="lbl">High</span></div>
-            <div class="summary-chip medium"><span class="num">${issues.filter(i=>i.severity==='medium').length}</span><span class="lbl">Medium</span></div>
-            <div class="summary-chip low"><span class="num">${issues.filter(i=>i.severity==='low').length}</span><span class="lbl">Low</span></div>
-          </div><div class="issue-list">`;
-        for (const iss of issues){
-          html += `<div class="issue ${iss.severity}">
-              <div class="issue-head"><div class="issue-title">${escapeHtml(iss.title)}</div><div class="badge-sev ${iss.severity}">${iss.severity}</div></div>
-              <div class="issue-desc">${escapeHtml(iss.description)}</div>`;
-          if (iss.match){
-            html += `<div class="issue-code"><span class="code">${escapeHtml(iss.match)}</span></div>`;
-          }
-          if (iss.suggestion){
-            html += `<div class="issue-fix"><b>Suggestion:</b> ${escapeHtml(iss.suggestion)}</div>`;
-          }
-          html += `</div>`;
-        }
-        html += `</div>`;
-        grammarResultsPanel.innerHTML = html;
-
-        const ranges = issues
-          .filter(i => i.length > 0)
-          .map(i => ({ start: i.index, end: i.index + i.length, severity: i.severity }))
-          .sort((a,b) => a.start - b.start);
-        let preview = '';
-        let cursor = 0;
-        for (const r of ranges){
-          if (r.start < cursor) continue;
-          preview += escapeHtml(text.slice(cursor, r.start));
-          const cls = r.severity === 'high' ? 'flag high' : 'flag';
-          preview += `<span class="${cls}">${escapeHtml(text.slice(r.start, r.end))}</span>`;
-          cursor = r.end;
-        }
-        preview += escapeHtml(text.slice(cursor));
-        highlightedText.innerHTML = preview || escapeHtml(text);
-        grammarPreviewPanel.style.display = '';
-
-        const concepts = [...new Set(issues.map(i => i.concept))];
-        const steps = [];
-        for (const c of concepts){
-          const s = GRAMMAR_LEARNING_PATHS[c] || ['Study the fundamentals of ' + c];
-          for (const step of s) if (!steps.includes(step)) steps.push(step);
-        }
-        const finalSteps = steps.slice(0, 8);
-        grammarStepList.innerHTML = finalSteps.map((step, i) => `<div class="step-item checkable" data-step="${i}"><div class="step-num">${i+1}</div><div class="step-text">${escapeHtml(step)}</div></div>`).join('');
-        grammarStepList.querySelectorAll('.step-item').forEach(el => {
-          el.addEventListener('click', () => {
-            el.classList.toggle('done');
-            const items = [...grammarStepList.querySelectorAll('.step-item')];
-            if (items.length && items.every(it => it.classList.contains('done'))){
-              fireConfetti(grammarStepList);
-              showToast("All done — writing skills leveled up!", '🎉');
-            }
-          });
-        });
-        grammarLearningPanel.style.display = '';
-      }
-
+      const issues = analyzeText(text);
+      renderGrammar(issues, text);
       checkBtn.disabled = false;
       bumpStat('grammar');
       navCountGrammar.style.display = '';
       navCountGrammar.textContent = stats.grammar;
       pushHistory('grammar', text);
-      showToast(issues.length === 0 ? pick(CLEAN_PHRASES_TEXT) : `${pick(FOUND_PHRASES)} — ${issues.length} issue${issues.length===1?'':'s'}`, issues.length === 0 ? '🎉' : '✎');
+      showToast(issues.length === 0 ? pick(CLEAN_PHRASES_TEXT) : `${pick(FOUND_PHRASES)} — ${issues.length} issue${issues.length === 1 ? '' : 's'}`, issues.length === 0 ? '🎉' : '✎');
     }, 500);
   }
 
-  checkBtn.addEventListener('click', checkGrammar);
+  function applyOneFix(i){
+    const iss = lastGrammar.issues[i];
+    if (!iss || iss.replacement == null) return;
+    const text = textInput.value;
+    if (text !== lastGrammar.text){ checkGrammar({ silent:true }); return; }
+    textInput.value = text.slice(0, iss.index) + iss.replacement + text.slice(iss.index + iss.length);
+    updateTextCounter();
+    const left = checkGrammar({ silent:true });
+    showToast('Fix applied', '✨');
+  }
+
+  function applyAllFixes(){
+    let text = textInput.value, total = 0;
+    for (let pass = 0; pass < 4; pass++){
+      const fixes = analyzeText(text).filter(f => f.replacement != null).sort((a, b) => b.index - a.index);
+      let limit = Infinity, applied = 0;
+      for (const f of fixes){
+        if (f.index + f.length > limit) continue;       // skip overlapping fixes; next pass picks them up
+        text = text.slice(0, f.index) + f.replacement + text.slice(f.index + f.length);
+        limit = f.index;
+        applied++;
+      }
+      total += applied;
+      if (!applied) break;
+    }
+    textInput.value = text;
+    updateTextCounter();
+    checkGrammar({ silent:true });
+    showToast(total ? `Applied ${total} fix${total === 1 ? '' : 'es'}` : 'Nothing to fix automatically', '✨');
+  }
+
+  grammarResultsPanel.addEventListener('click', e => {
+    const one = e.target.closest('.fix-btn');
+    if (one){ applyOneFix(parseInt(one.dataset.i, 10)); return; }
+    if (e.target.closest('#fixAllBtn')) applyAllFixes();
+  });
+
+  checkBtn.addEventListener('click', () => checkGrammar());
   document.getElementById('textClearBtn').addEventListener('click', () => {
     textInput.value = '';
     updateTextCounter();
-    grammarResultsPanel.innerHTML = `<div class="empty-state"><span class="icon">✎</span><p>Run a check to see feedback here.</p></div>`;
-    grammarPreviewPanel.style.display = 'none';
-    grammarLearningPanel.style.display = 'none';
-    grammarCountLabel.textContent = '';
+    renderGrammarEmpty();
   });
 
   // =================================================================
